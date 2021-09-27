@@ -1,4 +1,4 @@
-# broker-sftp-interface [![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=aktin_broker-sftp-interface)](https://sonarcloud.io/dashboard?id=aktin_broker-sftp-interface)
+# broker-sftp-interface [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=aktin_broker-sftp-interface&metric=alert_status)](https://sonarcloud.io/dashboard?id=aktin_broker-sftp-interface)
 Simple script that filters all [AKTIN Broker](https://github.com/aktin/broker) requests by a given tag and uploads the results of the filtered requests to a specified FTP server.
 
 Remembers the uploaded results via a created XML file that stores the request ID and the completeness of the uploaded results. Matches the completeness of broker requests with the XML file before uploading to the FTP server and uploads only new/changed results.
