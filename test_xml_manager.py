@@ -8,7 +8,7 @@ import unittest
 import lxml.etree as ET
 import os
 
-from ftp_export import StatusXmlManager
+from sftp_export import StatusXmlManager
 
 
 class TestStatusXmlManager(unittest.TestCase):
