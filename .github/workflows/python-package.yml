@@ -7,8 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
-      env:
-        PYTHON_VERSION: 3.9
+    env:
+      PYTHON_VERSION: 3.9
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python $PYTHON_VERSION
