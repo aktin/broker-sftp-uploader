@@ -26,12 +26,3 @@ jobs:
     - name: Test with pytest
       run: |
         pytest
-  setup-sftp:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-    steps:
-      - name: Run sftp build script
-        run: |
-          chmod +x "${GITHUB_WORKSPACE}/.github/scripts/build_sftp.sh"
-          "${GITHUB_WORKSPACE}/.github/scripts/build_sftp.sh"
