@@ -33,5 +33,5 @@ jobs:
     steps:
       - name: Run sftp build script
         run: |
-        chmod +x "${GITHUB_WORKSPACE}/.github/scripts/build_sftp.sh"
-        "${GITHUB_WORKSPACE}/.github/scripts/build_sftp.sh"
+          chmod +x "${GITHUB_WORKSPACE}/.github/scripts/build_sftp.sh"
+          "${GITHUB_WORKSPACE}/.github/scripts/build_sftp.sh"
