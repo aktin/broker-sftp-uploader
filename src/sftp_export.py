@@ -16,15 +16,11 @@ from cryptography.fernet import Fernet
 
 
 class BrokerRequestResultManager:
-    # TODO BROKER_URL = 'https://aktin-broker.klinikum.rwth-aachen.de'
     BROKER_URL = 'http://localhost:8080'
-
-    # TODO HARDOCDED?
-    # API key of the AKTIN broker
     ADMIN_API_KEY = 'xxxAdmin1234'
 
     # Tag of broker requests corresponding to the RKI
-    RKI_TAG = 'eins'
+    TAG_REQUESTS = 'rki'
 
     def __init__(self):
         self.__check_broker_server_availability()
@@ -71,7 +67,7 @@ class BrokerRequestResultManager:
         return response
 
     def get_tagged_requests_completion_as_dict(self) -> dict:
-        list_requests = self.__get_request_ids_with_tag(self.RKI_TAG)
+        list_requests = self.__get_request_ids_with_tag(self.TAG_REQUESTS)
         dict_broker = {}
         for id_request in list_requests:
             completion = self.__get_request_result_completion(id_request)
@@ -115,12 +111,9 @@ class BrokerRequestResultManager:
 
 
 class SftpFileManager:
-
-    # TODO HARDOCDED?
-    SFTP_HOST = '192.168.56.1'
-    SFTP_PORT = 22
-    SFTP_USERNAME = 'ftpuser'
-    SFTP_PASSWORD = 'ftpuser'
+    SFTP_HOST = '127.0.0.1'
+    SFTP_USERNAME = 'sftpuser'
+    SFTP_PASSWORD = 'sftppassword'
 
     # connection timeout in seconds
     SFTP_TIMEOUT = 25
@@ -130,28 +123,21 @@ class SftpFileManager:
     SFTP_FOLDERNAME = 'rki'
 
     # Path to key for symmetric encryption (AES with 128-bit CBC)
-    PATH_KEY_ENCRYPTION = r'C:\Users\User\PycharmProjects\rki\rki.key'
+    PATH_KEY_ENCRYPTION = 'rki.key'
     ENCRYPTOR = None
 
     def __init__(self):
-        self.__check_sftp_server_availability()
         self.__init_encryptor()
 
-    def __check_sftp_server_availability(self) -> None:
-        url = ''.join(['https://', self.SFTP_HOST])
-        response = requests.head(url)
-        if response.status_code != 200:
-            raise ConnectionError('Could not connect to SFTP-Server')
-
     def __init_encryptor(self) -> None:
-        key = open(self.PATH_KEY_ENCRYPTION, 'rb').read()
-        self.ENCRYPTOR = Fernet(key)
+        with open(self.PATH_KEY_ENCRYPTION, 'rb') as key:
+            self.ENCRYPTOR = Fernet(key.read())
 
     def __connect_to_sftp(self) -> paramiko.sftp_client.SFTPClient:
-        transport = paramiko.Transport((self.SFTP_HOST, self.SFTP_PORT))
-        transport.set_keepalive(self.SFTP_TIMEOUT)
-        transport.connect(username=self.SFTP_USERNAME, password=self.SFTP_PASSWORD)
-        return paramiko.SFTPClient.from_transport(transport)
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(self.SFTP_HOST, username=self.SFTP_USERNAME, password=self.SFTP_PASSWORD, timeout=self.SFTP_TIMEOUT)
+        return ssh.open_sftp()
 
     def upload_request_result(self, response: requests.models.Response) -> None:
         """

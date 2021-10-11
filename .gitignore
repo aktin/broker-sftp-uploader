@@ -135,5 +135,4 @@ dmypy.json
 profiling_stats.txt
 status.xml
 __pycache__
-*.key
 venv

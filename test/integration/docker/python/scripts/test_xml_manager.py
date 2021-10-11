@@ -7,11 +7,14 @@ Created on Wed Aug  4 15:09:04 2021
 import unittest
 import lxml.etree as ET
 import os
-
 from sftp_export import StatusXmlManager
 
 
 class TestStatusXmlManager(unittest.TestCase):
+
+    def setUp(self) -> None:
+        xml = StatusXmlManager()
+        self.addCleanup(os.remove, xml.STATUS_XML_NAME)
 
     def test_init(self):
         xml = StatusXmlManager()

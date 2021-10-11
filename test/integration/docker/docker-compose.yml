@@ -1,0 +1,31 @@
+version: '3.8'
+services:
+  broker-server:
+    container_name: broker-server
+    image: broker-server
+    build:
+      context: ./broker-server
+    network_mode: host
+  broker-connection:
+    tty: true
+    depends_on:
+      - broker-server
+    container_name: broker-connection
+    image: broker-connection
+    build:
+      context: ./broker-connection
+    network_mode: host
+  python:
+    tty: true
+    container_name: python
+    image: python
+    build:
+      context: ./python
+    network_mode: host
+  sftp:
+    tty: true
+    container_name: sftp
+    image: sftp
+    build:
+      context: ./sftp
+    network_mode: host
