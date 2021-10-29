@@ -4,6 +4,8 @@ Created on Thu Jul 15 16:11:47 2021
 @author: Alexander Kombeiz (akombeiz@ukaachen.de)
 """
 
+import sys
+import json
 import requests
 import urllib
 import lxml.etree as ET
@@ -15,14 +17,18 @@ from datetime import datetime
 from cryptography.fernet import Fernet
 
 
-class BrokerRequestResultManager:
-    BROKER_URL = 'http://localhost:8080'
-    ADMIN_API_KEY = 'xxxAdmin1234'
+# TODO  better comments
+# TODO  compose HEALTHCHECK
+# TODO openssl shizzle
+# TODO README
+# TODO integrationtest
 
-    # Tag of broker requests corresponding to the RKI
-    TAG_REQUESTS = 'rki'
+class BrokerRequestResultManager:
 
     def __init__(self):
+        self.BROKER_URL = os.environ['BROKER_URL']
+        self.ADMIN_API_KEY = os.environ['ADMIN_API_KEY']
+        self.TAG_REQUESTS = os.environ['TAG_REQUESTS']
         self.__check_broker_server_availability()
 
     def __check_broker_server_availability(self) -> None:
@@ -41,8 +47,7 @@ class BrokerRequestResultManager:
         """
         HTTP header for requests to AKTIN Broker
         """
-        return {'Authorization': ' '.join(['Bearer', self.ADMIN_API_KEY]), 'Connection': 'keep-alive',
-                'Accept': mediatype}
+        return {'Authorization': ' '.join(['Bearer', self.ADMIN_API_KEY]), 'Connection': 'keep-alive', 'Accept': mediatype}
 
     def get_request_result(self, id_request: str) -> requests.models.Response:
         """
@@ -77,8 +82,7 @@ class BrokerRequestResultManager:
     def __get_request_ids_with_tag(self, tag: str) -> list:
         logging.info('Checking for requests with tag %s', tag)
         url = self.__append_to_broker_url('broker', 'request', 'filtered')
-        url = '?'.join([url, urllib.parse.urlencode(
-            {'type': 'application/vnd.aktin.query.request+xml', 'predicate': "//tag='%s'" % tag})])
+        url = '?'.join([url, urllib.parse.urlencode({'type': 'application/vnd.aktin.query.request+xml', 'predicate': "//tag='%s'" % tag})])
         response = requests.get(url, headers=self.__create_basic_header_with_result_type('application/xml'))
         response.raise_for_status()
         list_request_id = [element.get('id') for element in ET.fromstring(response.content)]
@@ -127,11 +131,16 @@ class SftpFileManager:
     ENCRYPTOR = None
 
     def __init__(self):
-        self.__init_encryptor()
+        self.SFTP_HOST = os.environ['SFTP_HOST']
+        self.SFTP_USERNAME = os.environ['SFTP_USERNAME']
+        self.SFTP_PASSWORD = os.environ['SFTP_PASSWORD']
+        self.SFTP_TIMEOUT = int(os.environ['SFTP_TIMEOUT'])
+        self.PATH_KEY_ENCRYPTION = os.environ['PATH_KEY_ENCRYPTION']
+        self.ENCRYPTOR = self.__init_encryptor()
 
-    def __init_encryptor(self) -> None:
+    def __init_encryptor(self) -> Fernet:
         with open(self.PATH_KEY_ENCRYPTION, 'rb') as key:
-            self.ENCRYPTOR = Fernet(key.read())
+            return Fernet(key.read())
 
     def __connect_to_sftp(self) -> paramiko.sftp_client.SFTPClient:
         ssh = paramiko.SSHClient()
@@ -190,17 +199,12 @@ class SftpFileManager:
 
 
 class StatusXmlManager:
-    # Name of the status xml. Is used to keep track of all uploaded broker
-    # request results to sftp server
-    STATUS_XML_NAME = 'status.xml'
-    FORMAT_DATE = '%Y-%m-%d %H:%M:%S'
-
-    # content of status.xml as xml tree
-    ELEMENT_TREE = None
 
     def __init__(self):
+        self.STATUS_XML_NAME = os.environ['STATUS_XML_NAME']
         if not os.path.isfile(self.STATUS_XML_NAME):
             self.__init_status_xml()
+        self.FORMAT_DATE = '%Y-%m-%d %H:%M:%S'
         self.ELEMENT_TREE = ET.parse(self.STATUS_XML_NAME)
 
     def __init_status_xml(self) -> None:
@@ -344,9 +348,28 @@ def __main_job():
     sftp.upload_file(xml.STATUS_XML_NAME)
 
 
+def __verify_and_load_config_file(path_config: str):
+    set_required_keys = {'BROKER_URL', 'ADMIN_API_KEY', 'TAG_REQUESTS', 'SFTP_HOST',
+                         'SFTP_USERNAME', 'SFTP_PASSWORD', 'SFTP_TIMEOUT', 'SFTP_FOLDERNAME',
+                         'PATH_KEY_ENCRYPTION', 'STATUS_XML_NAME'}
+    if not os.path.isfile(path_config):
+        raise SystemExit('invalid config file path')
+    with open(path_config) as file_json:
+        dict_config = json.load(file_json)
+    set_found_keys = set(dict_config.keys())
+    set_matched_keys = set_required_keys.intersection(set_found_keys)
+    if set_matched_keys != set_required_keys:
+        raise SystemExit('following keys are missing in config file: {0}'.format(set_required_keys.difference(set_matched_keys)))
+    for key in set_required_keys:
+        os.environ[key] = dict_config.get(key)
+
+
 if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        raise SystemExit('please give path to config file')
     try:
         __init_logger()
+        __verify_and_load_config_file(sys.argv[1])
         __main_job()
     except Exception as e:
         logging.exception(e)

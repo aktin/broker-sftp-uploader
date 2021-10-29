@@ -1,0 +1,12 @@
+{
+    "BROKER_URL": "http://localhost:8080",
+    "ADMIN_API_KEY": "xxxAdmin1234",
+    "TAG_REQUESTS": "rki",
+    "SFTP_HOST": "127.0.0.1",
+    "SFTP_USERNAME": "sftpuser",
+    "SFTP_PASSWORD": "sftppassword",
+    "SFTP_TIMEOUT": "25",
+    "SFTP_FOLDERNAME": "rki",
+    "PATH_KEY_ENCRYPTION": "rki.key",
+    "STATUS_XML_NAME": "status.xml"
+}
