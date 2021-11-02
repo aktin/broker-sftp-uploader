@@ -1,19 +1,24 @@
-version: '3.8'
 services:
   broker-server:
     container_name: broker-server
     image: broker-server
     build:
       context: ./broker-server
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/broker/status" ]
+      interval: 2s
+      timeout: 2s
+      retries: 5
     network_mode: host
   broker-connection:
     tty: true
-    depends_on:
-      - broker-server
     container_name: broker-connection
     image: broker-connection
     build:
       context: ./broker-connection
+    depends_on:
+      broker-server:
+        condition: service_healthy
     network_mode: host
   python:
     tty: true

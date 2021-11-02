@@ -14,9 +14,6 @@ echo %ESC%[33m Copy python scripts from repository to python container and run u
 docker cp %RootDirPath%/src/sftp_export.py python:/opt/
 docker exec python pytest test_xml_manager.py
 
-echo %ESC%[33m Wait a bit to give broker-server time to start %ESC%[0m
-timeout /T 10 /nobreak
-
 echo %ESC%[33m Broker creates 3 requests with tag default and 3 with tag rki %ESC%[0m
 for /l %%i in (0, 1, 2) do (
 docker exec broker-connection ./broker_publish_new_request.sh rki

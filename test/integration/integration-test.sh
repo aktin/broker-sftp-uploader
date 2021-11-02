@@ -20,9 +20,6 @@ echo -e "${YEL} Copy python scripts from repository to python container and run 
 docker cp $ROOT_DIR/sftp_export.py python:/opt/
 docker exec python pytest test_xml_manager.py
 
-echo -e "${YEL} Wait a bit to give broker-server time to start ${WHI}"
-sleep 10s
-
 echo -e "${YEL} Broker creates 3 requests with tag default and 3 with tag rki ${WHI}"
 for i in {0..2}; do
   docker exec broker-connection ./broker_publish_new_request.sh rki
