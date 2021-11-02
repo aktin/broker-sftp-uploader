@@ -12,7 +12,15 @@ from sftp_export import SftpFileManager
 
 
 class TestFernetDecryption(unittest.TestCase):
-    NAME_FILE = 'export_2.zip'
+
+    def setUp(self) -> None:
+        self.NAME_FILE = 'export_2.zip'
+        os.environ['SFTP_HOST'] = ''
+        os.environ['SFTP_USERNAME'] = ''
+        os.environ['SFTP_PASSWORD'] = ''
+        os.environ['SFTP_TIMEOUT'] = '1'
+        os.environ['SFTP_FOLDERNAME'] = ''
+        os.environ['PATH_KEY_ENCRYPTION'] = 'rki.key'
 
     def test_decryption(self) -> None:
         self.assertTrue(os.path.exists(self.NAME_FILE))
