@@ -47,7 +47,7 @@ for i in {0..5}; do
 done
 
 echo -e "${YEL} Execute the sftp python script ${WHI}"
-docker exec python python sftp_export.py
+docker exec python python sftp_export.py settings.json
 
 echo -e "${YEL} Container python must have 3 entries in his status.xml ${WHI}"
 NUMBER_ENTRIES=$(docker exec python ./count_tag_in_status_xml.sh request-status)
@@ -92,7 +92,7 @@ if [[ ! NUMBER_NODES == 2 ]]; then
 fi
 
 echo -e "${YEL} Execute the sftp python script again ${WHI}"
-docker exec python python sftp_export.py
+docker exec python python sftp_export.py settings.json
 
 echo -e "${YEL} Container python must have 4 entries in his status.xml ${WHI}"
 NUMBER_ENTRIES=$(docker exec python ./count_tag_in_status_xml.sh request-status)

@@ -37,7 +37,7 @@ docker exec broker-connection ./client_submit_results.sh %ApiKey1% %%i
 )
 
 echo %ESC%[33m Execute the sftp python script %ESC%[0m
-docker exec python python sftp_export.py
+docker exec python python sftp_export.py settings.json
 
 echo %ESC%[33m Container python must have 3 entries in his status.xml %ESC%[0m
 for /f %%i in ('docker exec python ./count_tag_in_status_xml.sh request-status') do set NumberEntries=%%i
@@ -72,7 +72,7 @@ for /f %%i in ('docker exec broker-connection ./broker_count_connected_nodes.sh'
 if %NumberNodes% neq 2 echo %ESC%[41m invalid number of nodes found %ESC%[0m
 
 echo %ESC%[33m Execute the sftp python script again %ESC%[0m
-docker exec python python sftp_export.py
+docker exec python python sftp_export.py settings.json
 
 echo %ESC%[33m Container python must have 4 entries in his status.xml %ESC%[0m
 for /f %%i in ('docker exec python ./count_tag_in_status_xml.sh request-status') do set NumberEntries=%%i

@@ -8,5 +8,5 @@
     "SFTP_TIMEOUT": "25",
     "SFTP_FOLDERNAME": "rki",
     "PATH_KEY_ENCRYPTION": "rki.key",
-    "STATUS_XML_NAME": "status.xml"
+    "PATH_STATUS_XML": "status.xml"
 }
