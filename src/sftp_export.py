@@ -19,12 +19,6 @@ from datetime import datetime
 from cryptography.fernet import Fernet
 
 
-# TODO  better comments
-# TODO  compose HEALTHCHECK
-# TODO openssl shizzle
-# TODO README
-# TODO integrationtest
-
 class BrokerRequestResultManager:
 
     def __init__(self):
@@ -57,8 +51,8 @@ class BrokerRequestResultManager:
         first as a temporarily downloadable file with an uuid
         """
         logging.info('Downloading results of %s', id_request)
-        uuid = self.__export_request_result(id_request)
-        response = self.__download_exported_result(uuid)
+        id_export = self.__export_request_result(id_request)
+        response = self.__download_exported_result(id_export)
         return response
 
     def __export_request_result(self, id_request: str) -> str:
