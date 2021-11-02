@@ -1,0 +1,24 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+class BrokerRequestResultManager {
+Gets request completion rate of requests with given tag from AKTIN Broker
+Downloads request results from AKTIN Broker
+}
+
+class SftpFileManager {
+Encrypts requests results from AKTIN Broker
+Uploads files to given sftp server
+Deletes files from given sftp server
+}
+
+class StatusXmlManager {
+Creates and manages status xml file to keep track of uploaded, updated or
+deleted AKTIN Broker request results on given sftp server
+}
+
+BrokerRequestResultManager <-- Main
+SftpFileManager <-- Main
+StatusXmlManager <- Main
+
+@enduml
