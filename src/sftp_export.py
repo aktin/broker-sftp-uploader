@@ -4,6 +4,8 @@ Created on Thu Jul 15 16:11:47 2021
 @author: Alexander Kombeiz (akombeiz@ukaachen.de)
 """
 
+# @VERSION=1.0
+
 import sys
 import json
 import requests
@@ -65,8 +67,8 @@ class BrokerRequestResultManager:
         response.raise_for_status()
         return response.text
 
-    def __download_exported_result(self, uuid: str) -> requests.models.Response:
-        url = self.__append_to_broker_url('broker', 'download', uuid)
+    def __download_exported_result(self, id_export: str) -> requests.models.Response:
+        url = self.__append_to_broker_url('broker', 'download', id_export)
         response = requests.get(url, headers=self.__create_basic_header_with_result_type('application/xml'))
         response.raise_for_status()
         return response
@@ -93,7 +95,7 @@ class BrokerRequestResultManager:
         """
         Get the status of given broker request and compute result completion
         by counting connected nodes and number of nodes which completed request.
-        As each tag/node gets a default namespace through lxml, the namespace
+        As each tag/element gets a default namespace through lxml, the namespace
         is removed prior counting to allow a search with xpath.
         """
         url = self.__append_to_broker_url('broker', 'request', id_request, 'status')
@@ -104,7 +106,8 @@ class BrokerRequestResultManager:
         num_completed = tree.xpath('count(//completed)')
         return round(num_completed / num_nodes, 2) if num_nodes else 0.0
 
-    def __remove_namespace_from_tree(self, tree: ET._ElementTree) -> ET._ElementTree:
+    @staticmethod
+    def __remove_namespace_from_tree(tree: ET._ElementTree) -> ET._ElementTree:
         for elem in tree.getiterator():
             if not hasattr(elem.tag, 'find'):
                 continue
@@ -115,26 +118,13 @@ class BrokerRequestResultManager:
 
 
 class SftpFileManager:
-    SFTP_HOST = '127.0.0.1'
-    SFTP_USERNAME = 'sftpuser'
-    SFTP_PASSWORD = 'sftppassword'
-
-    # connection timeout in seconds
-    SFTP_TIMEOUT = 25
-
-    # Folder on sftp server to upload files to
-    # Corresponding user permissions must be set on sftp server!
-    SFTP_FOLDERNAME = 'rki'
-
-    # Path to key for symmetric encryption (AES with 128-bit CBC)
-    PATH_KEY_ENCRYPTION = 'rki.key'
-    ENCRYPTOR = None
 
     def __init__(self):
         self.SFTP_HOST = os.environ['SFTP_HOST']
         self.SFTP_USERNAME = os.environ['SFTP_USERNAME']
         self.SFTP_PASSWORD = os.environ['SFTP_PASSWORD']
         self.SFTP_TIMEOUT = int(os.environ['SFTP_TIMEOUT'])
+        self.SFTP_FOLDERNAME = os.environ['SFTP_FOLDERNAME']
         self.PATH_KEY_ENCRYPTION = os.environ['PATH_KEY_ENCRYPTION']
         self.ENCRYPTOR = self.__init_encryptor()
 
@@ -152,7 +142,7 @@ class SftpFileManager:
         """
         Uploads response content from BrokerConnection.get_request_result() to
         sftp server. Extracts name of file from response header. Prior uploading,
-        stores file temporarily in current local folder and encrypts it
+        stores file temporarily in current local folder and encrypts it via Fernet
         """
         name_zip = self.__extract_filename_from_broker_response(response)
         try:
@@ -164,16 +154,17 @@ class SftpFileManager:
             if os.path.isfile(name_zip):
                 os.remove(name_zip)
 
-    def __extract_filename_from_broker_response(self, response: requests.models.Response) -> str:
+    @staticmethod
+    def __extract_filename_from_broker_response(response: requests.models.Response) -> str:
         return re.search('filename=\"(.*)\"', response.headers['Content-Disposition']).group(1)
 
+    # TODO outsource encryption to openssl
     def __encrypt_file(self, file: bytes) -> bytes:
         return self.ENCRYPTOR.encrypt(file)
 
     def upload_file(self, filename: str) -> None:
         """
-        Upload file from current local folder to sftp server, overwrites file
-        if it already exists on sftp
+        Overwrites file if it already exists on server
         """
         logging.info('Sending %s to sftp server', filename)
         with self.__connect_to_sftp() as sftp:
@@ -183,7 +174,8 @@ class SftpFileManager:
         name_zip = self.__create_results_file_name(id_request)
         self.__delete_file(name_zip)
 
-    def __create_results_file_name(self, id_request: str) -> str:
+    @staticmethod
+    def __create_results_file_name(id_request: str) -> str:
         """
         Naming convention of AKTIN Broker for downloaded results
         """
@@ -201,67 +193,67 @@ class SftpFileManager:
 class StatusXmlManager:
 
     def __init__(self):
-        self.STATUS_XML_NAME = os.environ['STATUS_XML_NAME']
-        if not os.path.isfile(self.STATUS_XML_NAME):
+        self.PATH_STATUS_XML = os.environ['PATH_STATUS_XML']
+        if not os.path.isfile(self.PATH_STATUS_XML):
             self.__init_status_xml()
         self.FORMAT_DATE = '%Y-%m-%d %H:%M:%S'
-        self.ELEMENT_TREE = ET.parse(self.STATUS_XML_NAME)
+        self.ELEMENT_TREE = ET.parse(self.PATH_STATUS_XML)
 
     def __init_status_xml(self) -> None:
         """
-        Create a new status xml file in current folder with an empty <status> tag.
+        Create a new status xml file in local folder with an empty <status> tag
         """
         root = ET.Element('status')
         self.ELEMENT_TREE = ET.ElementTree(root)
         self.__save_status_xml_as_file()
 
     def __save_status_xml_as_file(self) -> None:
-        self.ELEMENT_TREE.write(self.STATUS_XML_NAME, pretty_print=True, encoding='utf-8')
+        self.ELEMENT_TREE.write(self.PATH_STATUS_XML, pretty_print=True, encoding='utf-8')
 
-    def add_new_node_to_status_xml(self, id_request: str, completion: str) -> None:
-        if self.__is_node_in_statux_xml(id_request):
-            raise ValueError('Node with id %s already exists in xml' % id_request)
-        element = self.__create_new_status_node(id_request, completion)
+    def add_new_element_to_status_xml(self, id_request: str, completion: str) -> None:
+        if self.__is_element_in_statux_xml(id_request):
+            raise ValueError('Element with id %s already exists in xml' % id_request)
+        element = self.__create_new_status_element(id_request, completion)
         self.ELEMENT_TREE.getroot().append(element)
         self.__save_status_xml_as_file()
 
-    def __is_node_in_statux_xml(self, id_request: str) -> bool:
-        node = self.ELEMENT_TREE.xpath("//*[local-name()='request-status']/id[text()='%s']/./.." % id_request)
-        if node:
+    def __is_element_in_statux_xml(self, id_request: str) -> bool:
+        element = self.ELEMENT_TREE.xpath("//*[local-name()='request-status']/id[text()='%s']/./.." % id_request)
+        if element:
             return True
         return False
 
-    def __create_new_status_node(self, id_request: str, completion: str) -> ET._Element:
+    def __create_new_status_element(self, id_request: str, completion: str) -> ET._Element:
         element = ET.Element('request-status')
         ET.SubElement(element, 'id').text = id_request
         ET.SubElement(element, 'completion').text = str(completion)
         ET.SubElement(element, 'uploaded').text = datetime.utcnow().strftime(self.FORMAT_DATE)
         return element
 
-    def update_request_completion_of_status_node(self, id_request: str, completion: str) -> None:
-        parent = self.__get_node_from_status_xml(id_request)
+    def update_request_completion_of_status_element(self, id_request: str, completion: str) -> None:
+        parent = self.__get_element_from_status_xml(id_request)
         parent.find('.//completion').text = completion
-        self.__add_or_update_date_tag_in_node(parent, 'last-update')
+        self.__add_or_update_date_tag_in_element(parent, 'last-update')
         self.__save_status_xml_as_file()
 
-    def add_delete_tag_to_status_node(self, id_request: str) -> None:
-        parent = self.__get_node_from_status_xml(id_request)
-        self.__add_or_update_date_tag_in_node(parent, 'deleted')
+    def add_delete_tag_to_status_element(self, id_request: str) -> None:
+        parent = self.__get_element_from_status_xml(id_request)
+        self.__add_or_update_date_tag_in_element(parent, 'deleted')
         self.__save_status_xml_as_file()
 
-    def __get_node_from_status_xml(self, id_request: str) -> ET._Element:
-        if not self.__is_node_in_statux_xml(id_request):
-            raise ValueError('Node with id %s could not be found' % id_request)
+    def __get_element_from_status_xml(self, id_request: str) -> ET._Element:
+        if not self.__is_element_in_statux_xml(id_request):
+            raise ValueError('Element with id %s could not be found' % id_request)
         return self.ELEMENT_TREE.xpath("//*[local-name()='request-status']/id[text()='%s']/./.." % id_request)[0]
 
-    def __add_or_update_date_tag_in_node(self, parent: ET._Element, name_tag: str) -> None:
+    def __add_or_update_date_tag_in_element(self, parent: ET._Element, name_tag: str) -> None:
         child = parent.find('.//%s' % name_tag)
         if child is None:
             ET.SubElement(parent, name_tag).text = datetime.utcnow().strftime(self.FORMAT_DATE)
         else:
             child.text = datetime.utcnow().strftime(self.FORMAT_DATE)
 
-    def get_status_node_completion_as_dict(self) -> dict:
+    def get_request_completion_as_dict(self) -> dict:
         """
         Extracts from each element in status xml the request id and the
         corresponding result completion and returns them as a dict
@@ -271,13 +263,11 @@ class StatusXmlManager:
         list_completion = [element.text for element in root.findall('.//completion')]
         return dict(zip(list_ids, list_completion))
 
-    def compare_request_completion_between_broker_and_sftp(self, dict_broker: dict, dict_xml: dict) -> tuple[
-        set, set, set]:
+    def compare_request_completion_between_broker_and_sftp(self, dict_broker: dict, dict_xml: dict) -> (set, set, set):
         set_new = set(dict_broker.keys()).difference(set(dict_xml.keys()))
         set_update = self.__get_requests_to_update(dict_broker, dict_xml)
         set_delete = self.__get_requests_to_delete(dict_broker, dict_xml)
-        logging.info('%d new requests, %d requests to update, %d requests to delete' % (
-            len(set_new), len(set_update), len(set_delete)))
+        logging.info('%d new requests, %d requests to update, %d requests to delete' % (len(set_new), len(set_update), len(set_delete)))
         return set_new, set_update, set_delete
 
     def __get_requests_to_update(self, dict_broker: dict, dict_xml: dict) -> set:
@@ -303,7 +293,7 @@ class StatusXmlManager:
         return set_delete
 
     def __is_request_tagged_as_deleted(self, id_request: str) -> bool:
-        parent = self.__get_node_from_status_xml(id_request)
+        parent = self.__get_element_from_status_xml(id_request)
         child = parent.find('.//deleted')
         return False if child is None else True
 
@@ -326,32 +316,43 @@ def __stop_logger():
 
 
 def __main_job():
+    """
+    Stores results of requests with given tag on given sftp server.
+    New/updated results are uploaded and completion rate is stored in a status xml.
+    If an existing request is deleted from broker server, the corresponding result
+    is deleted from sftp server. The corresponding element in status xml gets a
+    deleted-tag.
+    Script will throw exception and discontinue, if upload or connection fails.
+    Therefore, status xml is saved after every modification.
+    """
     broker = BrokerRequestResultManager()
     sftp = SftpFileManager()
     xml = StatusXmlManager()
 
     dict_broker = broker.get_tagged_requests_completion_as_dict()
-    dict_xml = xml.get_status_node_completion_as_dict()
+    dict_xml = xml.get_request_completion_as_dict()
     set_new, set_update, set_delete = xml.compare_request_completion_between_broker_and_sftp(dict_broker, dict_xml)
 
     for id_request in set_delete:
         sftp.delete_request_result(id_request)
-        xml.add_delete_tag_to_status_node(id_request)
+        xml.add_delete_tag_to_status_element(id_request)
     for id_request in set_new.union(set_update):
         response_zip = broker.get_request_result(id_request)
         sftp.upload_request_result(response_zip)
         completion = dict_broker.get(id_request)
         if id_request in set_new:
-            xml.add_new_node_to_status_xml(id_request, completion)
+            xml.add_new_element_to_status_xml(id_request, completion)
         if id_request in set_update:
-            xml.update_request_completion_of_status_node(id_request, completion)
-    sftp.upload_file(xml.STATUS_XML_NAME)
+            xml.update_request_completion_of_status_element(id_request, completion)
+    sftp.upload_file(xml.PATH_STATUS_XML)
 
 
 def __verify_and_load_config_file(path_config: str):
-    set_required_keys = {'BROKER_URL', 'ADMIN_API_KEY', 'TAG_REQUESTS', 'SFTP_HOST',
-                         'SFTP_USERNAME', 'SFTP_PASSWORD', 'SFTP_TIMEOUT', 'SFTP_FOLDERNAME',
-                         'PATH_KEY_ENCRYPTION', 'STATUS_XML_NAME'}
+    """
+    Configuration is loaded from external config json and saved as environment variables
+    """
+    set_required_keys = {'BROKER_URL', 'ADMIN_API_KEY', 'TAG_REQUESTS', 'SFTP_HOST', 'SFTP_USERNAME',
+                         'SFTP_PASSWORD', 'SFTP_TIMEOUT', 'SFTP_FOLDERNAME', 'PATH_KEY_ENCRYPTION', 'PATH_STATUS_XML'}
     if not os.path.isfile(path_config):
         raise SystemExit('invalid config file path')
     with open(path_config) as file_json:
