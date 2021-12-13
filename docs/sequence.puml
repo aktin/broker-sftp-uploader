@@ -1,0 +1,20 @@
+@startuml
+skinparam sequenceMessageAlign center
+
+Script -> Broker : Give me the IDs of all requests with this tag
+Script <-- Broker : Here you go
+
+Script -> Script : Let's compare them with what I have written down
+
+Script -> Broker : Some IDs are new, get me the results
+Script <-- Broker : Alright
+
+Script -> SFTP : I have new results for you
+Script <-- SFTP : Good
+
+Script -> SFTP : Also, this results are no longer valid and must be deleted
+Script <-- SFTP : Ok
+
+Script -> Script : Better write down, what results I just added and deleted
+
+@enduml

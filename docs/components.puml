@@ -1,24 +1,42 @@
 @startuml
 'https://plantuml.com/class-diagram
+hide methods
+
+class "AKTIN Broker Server" as broker
+hide broker members
+hide broker circle
+class broker #aliceblue;line:blue;text:blue
+
+class "SFTP Server" as sftp
+hide sftp members
+hide sftp circle
+class sftp #aliceblue;line:blue;text:blue
 
 class BrokerRequestResultManager {
-Gets request completion rate of requests with given tag from AKTIN Broker
-Downloads request results from AKTIN Broker
+* Gets request completion rate of requests with given tag from AKTIN Broker
+* Downloads request results from AKTIN Broker
 }
 
 class SftpFileManager {
-Encrypts requests results from AKTIN Broker
-Uploads files to given sftp server
-Deletes files from given sftp server
+* Encrypts requests results from AKTIN Broker
+* Uploads files to given sftp server
+* Deletes files from given sftp server
 }
 
 class StatusXmlManager {
-Creates and manages status xml file to keep track of uploaded, updated or
+* Creates and manages status xml file to keep track of uploaded, updated or
 deleted AKTIN Broker request results on given sftp server
 }
 
-BrokerRequestResultManager <-- Main
-SftpFileManager <-- Main
-StatusXmlManager <- Main
+class Main {}
+hide Main members
+
+Main --> BrokerRequestResultManager
+BrokerRequestResultManager --> broker
+
+Main --> SftpFileManager
+SftpFileManager --> sftp
+
+Main --> StatusXmlManager
 
 @enduml
