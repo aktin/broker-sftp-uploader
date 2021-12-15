@@ -309,7 +309,25 @@ def __stop_logger():
     logging.shutdown()
 
 
-def __main_job():
+def __verify_and_load_config_file(path_config: str):
+    """
+    Configuration is loaded from external config json and saved as environment variables
+    """
+    set_required_keys = {'BROKER_URL', 'ADMIN_API_KEY', 'TAG_REQUESTS', 'SFTP_HOST', 'SFTP_USERNAME',
+                         'SFTP_PASSWORD', 'SFTP_TIMEOUT', 'SFTP_FOLDERNAME', 'PATH_KEY_ENCRYPTION', 'PATH_STATUS_XML'}
+    if not os.path.isfile(path_config):
+        raise SystemExit('invalid config file path')
+    with open(path_config) as file_json:
+        dict_config = json.load(file_json)
+    set_found_keys = set(dict_config.keys())
+    set_matched_keys = set_required_keys.intersection(set_found_keys)
+    if set_matched_keys != set_required_keys:
+        raise SystemExit('following keys are missing in config file: {0}'.format(set_required_keys.difference(set_matched_keys)))
+    for key in set_required_keys:
+        os.environ[key] = dict_config.get(key)
+
+
+def __upload_tagged_results_to_sftp():
     """
     Stores results of requests with given tag on given sftp server.
     New/updated results are uploaded and completion rate is stored in a status xml.
@@ -341,32 +359,18 @@ def __main_job():
     sftp.upload_file(xml.PATH_STATUS_XML)
 
 
-def __verify_and_load_config_file(path_config: str):
-    """
-    Configuration is loaded from external config json and saved as environment variables
-    """
-    set_required_keys = {'BROKER_URL', 'ADMIN_API_KEY', 'TAG_REQUESTS', 'SFTP_HOST', 'SFTP_USERNAME',
-                         'SFTP_PASSWORD', 'SFTP_TIMEOUT', 'SFTP_FOLDERNAME', 'PATH_KEY_ENCRYPTION', 'PATH_STATUS_XML'}
-    if not os.path.isfile(path_config):
-        raise SystemExit('invalid config file path')
-    with open(path_config) as file_json:
-        dict_config = json.load(file_json)
-    set_found_keys = set(dict_config.keys())
-    set_matched_keys = set_required_keys.intersection(set_found_keys)
-    if set_matched_keys != set_required_keys:
-        raise SystemExit('following keys are missing in config file: {0}'.format(set_required_keys.difference(set_matched_keys)))
-    for key in set_required_keys:
-        os.environ[key] = dict_config.get(key)
+def main(path_config: str):
+    try:
+        __init_logger()
+        __verify_and_load_config_file(path_config)
+        __upload_tagged_results_to_sftp()
+    except Exception as e:
+        logging.exception(e)
+    finally:
+        __stop_logger()
 
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         raise SystemExit('please give path to config file')
-    try:
-        __init_logger()
-        __verify_and_load_config_file(sys.argv[1])
-        __main_job()
-    except Exception as e:
-        logging.exception(e)
-    finally:
-        __stop_logger()
+    main(sys.argv[1])
