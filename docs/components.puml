@@ -1,6 +1,7 @@
 @startuml
-'https://plantuml.com/class-diagram
 hide methods
+
+title __Diagram of broker-sftp-interface__\n
 
 class "AKTIN Broker Server" as broker
 hide broker members
