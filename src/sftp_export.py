@@ -121,6 +121,11 @@ class SftpFileManager:
         self.SFTP_FOLDERNAME = os.environ['SFTP_FOLDERNAME']
         self.PATH_KEY_ENCRYPTION = os.environ['PATH_KEY_ENCRYPTION']
         self.ENCRYPTOR = self.__init_encryptor()
+        self.CONNECTION = self.__connect_to_sftp()
+
+    def __del__(self):
+        if self.CONNECTION:
+            self.CONNECTION.close()
 
     def __init_encryptor(self) -> Fernet:
         with open(self.PATH_KEY_ENCRYPTION, 'rb') as key:
@@ -161,8 +166,7 @@ class SftpFileManager:
         Overwrites file if it already exists on server
         """
         logging.info('Sending %s to sftp server', filename)
-        with self.__connect_to_sftp() as sftp:
-            sftp.put(filename, '%s/%s' % (self.SFTP_FOLDERNAME, filename))
+        self.CONNECTION.put(filename, '%s/%s' % (self.SFTP_FOLDERNAME, filename))
 
     def delete_request_result(self, id_request: str) -> None:
         name_zip = self.__create_results_file_name(id_request)
@@ -178,8 +182,7 @@ class SftpFileManager:
     def __delete_file(self, filename: str) -> None:
         logging.info('Deleting %s from sftp server', filename)
         try:
-            with self.__connect_to_sftp() as sftp:
-                sftp.remove('%s/%s' % (self.SFTP_FOLDERNAME, filename))
+            self.CONNECTION.remove('%s/%s' % (self.SFTP_FOLDERNAME, filename))
         except FileNotFoundError:
             logging.info('%s could not be found', filename)
 
