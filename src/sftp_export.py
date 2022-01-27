@@ -140,10 +140,6 @@ class SftpFileManager:
         self.ENCRYPTOR = self.__init_encryptor()
         self.CONNECTION = self.__connect_to_sftp()
 
-    def __del__(self):
-        if self.CONNECTION:
-            self.CONNECTION.close()
-
     def __init_encryptor(self) -> Fernet:
         with open(self.PATH_KEY_ENCRYPTION, 'rb') as key:
             return Fernet(key.read())
