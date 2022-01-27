@@ -4,7 +4,7 @@ WORKDIR /opt
 
 RUN apt-get update && apt-get install -y openssh-server ssh
 
-ADD scripts/* /opt/
+ADD scripts/* ./
 RUN chmod +x *
 
 RUN ./create_sftp_user.sh

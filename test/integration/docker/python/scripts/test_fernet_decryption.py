@@ -5,6 +5,7 @@ Created on Fri Okt  8 09:47:32 2021
 """
 
 import os
+import json
 import zipfile
 import unittest
 
@@ -15,12 +16,8 @@ class TestFernetDecryption(unittest.TestCase):
 
     def setUp(self) -> None:
         self.NAME_FILE = 'export_2.zip'
-        os.environ['SFTP_HOST'] = ''
-        os.environ['SFTP_USERNAME'] = ''
-        os.environ['SFTP_PASSWORD'] = ''
-        os.environ['SFTP_TIMEOUT'] = '1'
-        os.environ['SFTP_FOLDERNAME'] = ''
-        os.environ['PATH_KEY_ENCRYPTION'] = 'rki.key'
+        self.NAME_CONFIG = 'settings.json'
+        self.__load_config_file()
 
     def test_decryption(self) -> None:
         self.assertTrue(os.path.exists(self.NAME_FILE))
@@ -45,6 +42,13 @@ class TestFernetDecryption(unittest.TestCase):
         file_encrypted = sftp.ENCRYPTOR.encrypt(file_decrypted)
         with open(self.NAME_FILE, 'wb') as file_zip:
             file_zip.write(file_encrypted)
+
+    def __load_config_file(self):
+        with open(self.NAME_CONFIG) as file_json:
+            dict_config = json.load(file_json)
+        set_keys = set(dict_config.keys())
+        for key in set_keys:
+            os.environ[key] = dict_config.get(key)
 
 
 if __name__ == '__main__':

@@ -4,5 +4,5 @@ WORKDIR /opt
 
 RUN apt-get update && apt-get install -y curl
 
-ADD scripts/* /opt/
+ADD scripts/* ./
 RUN chmod +x *
