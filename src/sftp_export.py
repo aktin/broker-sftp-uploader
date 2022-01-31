@@ -35,6 +35,16 @@ from cryptography.fernet import Fernet
 
 # TODO outsource encryption to openssl
 # TODO set encryption to asymmetrical
+# TODO add WORKING DIR (if status.xml is in a path, the whole path is uploaded to sftp)
+# TODO formatting gets destroyed when updating xml elements:
+
+"""
+  <request-status>
+    <id>ID</id>
+    <completion>COMLPETION</completion>
+    <uploaded>2022-01-28 11:00:23</uploaded>
+  <last-update>2022-01-31 09:03:49</last-update></request-status>
+"""
 
 class BrokerRequestResultManager:
 
