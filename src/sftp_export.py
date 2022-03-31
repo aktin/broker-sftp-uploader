@@ -49,9 +49,9 @@ from cryptography.fernet import Fernet
 class BrokerRequestResultManager:
 
     def __init__(self):
-        self.BROKER_URL = os.environ['BROKER_URL']
-        self.ADMIN_API_KEY = os.environ['ADMIN_API_KEY']
-        self.TAG_REQUESTS = os.environ['TAG_REQUESTS']
+        self.__BROKER_URL = os.environ['BROKER_URL']
+        self.__ADMIN_API_KEY = os.environ['ADMIN_API_KEY']
+        self.__TAG_REQUESTS = os.environ['TAG_REQUESTS']
         self.__check_broker_server_availability()
 
     def __check_broker_server_availability(self) -> None:
@@ -61,7 +61,7 @@ class BrokerRequestResultManager:
             raise ConnectionError('Could not connect to AKTIN Broker')
 
     def __append_to_broker_url(self, *items: str) -> str:
-        url = self.BROKER_URL
+        url = self.__BROKER_URL
         for item in items:
             url = '{}/{}'.format(url, item)
         return url
@@ -70,7 +70,7 @@ class BrokerRequestResultManager:
         """
         HTTP header for requests to AKTIN Broker
         """
-        return {'Authorization': ' '.join(['Bearer', self.ADMIN_API_KEY]), 'Connection': 'keep-alive', 'Accept': mediatype}
+        return {'Authorization': ' '.join(['Bearer', self.__ADMIN_API_KEY]), 'Connection': 'keep-alive', 'Accept': mediatype}
 
     def get_request_result(self, id_request: str) -> requests.models.Response:
         """
@@ -95,7 +95,7 @@ class BrokerRequestResultManager:
         return response
 
     def get_tagged_requests_completion_as_dict(self) -> dict:
-        list_requests = self.__get_request_ids_with_tag(self.TAG_REQUESTS)
+        list_requests = self.__get_request_ids_with_tag(self.__TAG_REQUESTS)
         dict_broker = {}
         for id_request in list_requests:
             completion = self.__get_request_result_completion(id_request)
@@ -141,40 +141,42 @@ class BrokerRequestResultManager:
 class SftpFileManager:
 
     def __init__(self):
-        self.SFTP_HOST = os.environ['SFTP_HOST']
-        self.SFTP_USERNAME = os.environ['SFTP_USERNAME']
-        self.SFTP_PASSWORD = os.environ['SFTP_PASSWORD']
-        self.SFTP_TIMEOUT = int(os.environ['SFTP_TIMEOUT'])
-        self.SFTP_FOLDERNAME = os.environ['SFTP_FOLDERNAME']
-        self.PATH_KEY_ENCRYPTION = os.environ['PATH_KEY_ENCRYPTION']
+        self.__SFTP_HOST = os.environ['SFTP_HOST']
+        self.__SFTP_USERNAME = os.environ['SFTP_USERNAME']
+        self.__SFTP_PASSWORD = os.environ['SFTP_PASSWORD']
+        self.__SFTP_TIMEOUT = int(os.environ['SFTP_TIMEOUT'])
+        self.__SFTP_FOLDERNAME = os.environ['SFTP_FOLDERNAME']
+        self.__PATH_KEY_ENCRYPTION = os.environ['PATH_KEY_ENCRYPTION']
+        self.__WORKING_DIR = os.environ['WORKING_DIR']
         self.ENCRYPTOR = self.__init_encryptor()
-        self.CONNECTION = self.__connect_to_sftp()
+        self.__CONNECTION = self.__connect_to_sftp()
 
     def __init_encryptor(self) -> Fernet:
-        with open(self.PATH_KEY_ENCRYPTION, 'rb') as key:
+        with open(self.__PATH_KEY_ENCRYPTION, 'rb') as key:
             return Fernet(key.read())
 
     def __connect_to_sftp(self) -> paramiko.sftp_client.SFTPClient:
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(self.SFTP_HOST, username=self.SFTP_USERNAME, password=self.SFTP_PASSWORD, timeout=self.SFTP_TIMEOUT)
+        ssh.connect(self.__SFTP_HOST, username=self.__SFTP_USERNAME, password=self.__SFTP_PASSWORD, timeout=self.__SFTP_TIMEOUT)
         return ssh.open_sftp()
 
     def upload_request_result(self, response: requests.models.Response) -> None:
         """
-        Uploads response content from BrokerConnection.get_request_result() to
-        sftp server. Extracts name of file from response header. Prior uploading,
-        stores file temporarily in current local folder and encrypts it via Fernet
+        Uploads response content from BrokerConnection.get_request_result() to sftp server.
+        Extracts name of file from response header.
+        Prior uploading, stores file temporarily in current local folder and encrypts it via Fernet.
         """
-        name_zip = self.__extract_filename_from_broker_response(response)
+        filename = self.__extract_filename_from_broker_response(response)
+        tmp_path_file = os.path.join(self.__WORKING_DIR, filename)
         try:
-            with open(name_zip, 'wb') as file_zip:
+            with open(tmp_path_file, 'wb') as file:
                 file_encrypted = self.__encrypt_file(response.content)
-                file_zip.write(file_encrypted)
-            self.upload_file(name_zip)
+                file.write(file_encrypted)
+            self.upload_file(tmp_path_file)
         finally:
-            if os.path.isfile(name_zip):
-                os.remove(name_zip)
+            if os.path.isfile(tmp_path_file):
+                os.remove(tmp_path_file)
 
     @staticmethod
     def __extract_filename_from_broker_response(response: requests.models.Response) -> str:
@@ -183,12 +185,13 @@ class SftpFileManager:
     def __encrypt_file(self, file: bytes) -> bytes:
         return self.ENCRYPTOR.encrypt(file)
 
-    def upload_file(self, filename: str) -> None:
+    def upload_file(self, path_file: str) -> None:
         """
         Overwrites file if it already exists on server
         """
-        logging.info('Sending %s to sftp server', filename)
-        self.CONNECTION.put(filename, '%s/%s' % (self.SFTP_FOLDERNAME, filename))
+        logging.info('Sending %s to sftp server', path_file)
+        filename = os.path.basename(path_file)
+        self.__CONNECTION.put(path_file, '%s/%s' % (self.__SFTP_FOLDERNAME, filename))
 
     def delete_request_result(self, id_request: str) -> None:
         name_zip = self.__create_results_file_name(id_request)
@@ -204,7 +207,7 @@ class SftpFileManager:
     def __delete_file(self, filename: str) -> None:
         logging.info('Deleting %s from sftp server', filename)
         try:
-            self.CONNECTION.remove('%s/%s' % (self.SFTP_FOLDERNAME, filename))
+            self.__CONNECTION.remove('%s/%s' % (self.__SFTP_FOLDERNAME, filename))
         except FileNotFoundError:
             logging.info('%s could not be found', filename)
 
@@ -212,32 +215,32 @@ class SftpFileManager:
 class StatusXmlManager:
 
     def __init__(self):
-        self.PATH_STATUS_XML = os.environ['PATH_STATUS_XML']
+        self.PATH_STATUS_XML = os.path.join(os.environ['WORKING_DIR'], 'status.xml')
         if not os.path.isfile(self.PATH_STATUS_XML):
             self.__init_status_xml()
-        self.FORMAT_DATE = '%Y-%m-%d %H:%M:%S'
-        self.ELEMENT_TREE = ET.parse(self.PATH_STATUS_XML)
+        self.__FORMAT_DATE = '%Y-%m-%d %H:%M:%S'
+        self.__ELEMENT_TREE = ET.parse(self.PATH_STATUS_XML)
 
     def __init_status_xml(self) -> None:
         """
         Create a new status xml file in local folder with an empty <status> tag
         """
         root = ET.Element('status')
-        self.ELEMENT_TREE = ET.ElementTree(root)
+        self.__ELEMENT_TREE = ET.ElementTree(root)
         self.__save_status_xml_as_file()
 
     def __save_status_xml_as_file(self) -> None:
-        self.ELEMENT_TREE.write(self.PATH_STATUS_XML, pretty_print=True, encoding='utf-8')
+        self.__ELEMENT_TREE.write(self.PATH_STATUS_XML, encoding='utf-8')
 
     def add_new_element_to_status_xml(self, id_request: str, completion: str) -> None:
         if self.__is_element_in_statux_xml(id_request):
             raise ValueError('Element with id %s already exists in xml' % id_request)
         element = self.__create_new_status_element(id_request, completion)
-        self.ELEMENT_TREE.getroot().append(element)
+        self.__ELEMENT_TREE.getroot().append(element)
         self.__save_status_xml_as_file()
 
     def __is_element_in_statux_xml(self, id_request: str) -> bool:
-        element = self.ELEMENT_TREE.xpath("//*[local-name()='request-status']/id[text()='%s']/./.." % id_request)
+        element = self.__ELEMENT_TREE.xpath("//*[local-name()='request-status']/id[text()='%s']/./.." % id_request)
         if element:
             return True
         return False
@@ -246,7 +249,7 @@ class StatusXmlManager:
         element = ET.Element('request-status')
         ET.SubElement(element, 'id').text = id_request
         ET.SubElement(element, 'completion').text = str(completion)
-        ET.SubElement(element, 'uploaded').text = datetime.utcnow().strftime(self.FORMAT_DATE)
+        ET.SubElement(element, 'uploaded').text = datetime.utcnow().strftime(self.__FORMAT_DATE)
         return element
 
     def update_request_completion_of_status_element(self, id_request: str, completion: str) -> None:
@@ -263,21 +266,21 @@ class StatusXmlManager:
     def __get_element_from_status_xml(self, id_request: str) -> ET._Element:
         if not self.__is_element_in_statux_xml(id_request):
             raise ValueError('Element with id %s could not be found' % id_request)
-        return self.ELEMENT_TREE.xpath("//*[local-name()='request-status']/id[text()='%s']/./.." % id_request)[0]
+        return self.__ELEMENT_TREE.xpath("//*[local-name()='request-status']/id[text()='%s']/./.." % id_request)[0]
 
     def __add_or_update_date_tag_in_element(self, parent: ET._Element, name_tag: str) -> None:
         child = parent.find('.//%s' % name_tag)
         if child is None:
-            ET.SubElement(parent, name_tag).text = datetime.utcnow().strftime(self.FORMAT_DATE)
+            ET.SubElement(parent, name_tag).text = datetime.utcnow().strftime(self.__FORMAT_DATE)
         else:
-            child.text = datetime.utcnow().strftime(self.FORMAT_DATE)
+            child.text = datetime.utcnow().strftime(self.__FORMAT_DATE)
 
     def get_request_completion_as_dict(self) -> dict:
         """
         Extracts from each element in status xml the request id and the
         corresponding result completion and returns them as a dict
         """
-        root = self.ELEMENT_TREE.getroot()
+        root = self.__ELEMENT_TREE.getroot()
         list_ids = [element.text for element in root.findall('.//id')]
         list_completion = [element.text for element in root.findall('.//completion')]
         return dict(zip(list_ids, list_completion))
@@ -339,7 +342,7 @@ def __verify_and_load_config_file(path_config: str):
     Configuration is loaded from external config json and saved as environment variables
     """
     set_required_keys = {'BROKER_URL', 'ADMIN_API_KEY', 'TAG_REQUESTS', 'SFTP_HOST', 'SFTP_USERNAME',
-                         'SFTP_PASSWORD', 'SFTP_TIMEOUT', 'SFTP_FOLDERNAME', 'PATH_KEY_ENCRYPTION', 'PATH_STATUS_XML'}
+                         'SFTP_PASSWORD', 'SFTP_TIMEOUT', 'SFTP_FOLDERNAME', 'PATH_KEY_ENCRYPTION', 'WORKING_DIR'}
     if not os.path.isfile(path_config):
         raise SystemExit('invalid config file path')
     with open(path_config) as file_json:
