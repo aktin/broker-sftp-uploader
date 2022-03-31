@@ -1,4 +1,4 @@
-# broker-sftp-interface [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=aktin_broker-sftp-interface&metric=alert_status)](https://sonarcloud.io/dashboard?id=aktin_broker-sftp-interface) ![Python 3.9](https://img.shields.io/badge/python-3.9-blue)
+# broker-SFTP-interface [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=aktin_broker-SFTP-interface&metric=alert_status)](https://sonarcloud.io/dashboard?id=aktin_broker-SFTP-interface) ![Python 3.9](https://img.shields.io/badge/python-3.9-blue)
 
 Simple script that filters all [AKTIN Broker](https://github.com/aktin/broker) requests by a given tag and uploads the results of the filtered requests to a specified SFTP server.
 
