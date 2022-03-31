@@ -34,17 +34,7 @@ from cryptography.fernet import Fernet
 
 
 # TODO outsource encryption to openssl
-# TODO set encryption to asymmetrical
-# TODO add WORKING DIR (if status.xml is in a path, the whole path is uploaded to sftp)
-# TODO formatting gets destroyed when updating xml elements:
-
-"""
-  <request-status>
-    <id>ID</id>
-    <completion>COMLPETION</completion>
-    <uploaded>2022-01-28 11:00:23</uploaded>
-  <last-update>2022-01-31 09:03:49</last-update></request-status>
-"""
+# TODO set encryption to be asymmetrical
 
 class BrokerRequestResultManager:
 
@@ -74,8 +64,7 @@ class BrokerRequestResultManager:
 
     def get_request_result(self, id_request: str) -> requests.models.Response:
         """
-        To download request results from AKTIN broker, they have to be exported
-        first as a temporarily downloadable file with an uuid
+        To download request results from AKTIN broker, they have to be exported first as a temporarily downloadable file with an uuid
         """
         logging.info('Downloading results of %s', id_request)
         id_export = self.__export_request_result(id_request)
@@ -114,10 +103,8 @@ class BrokerRequestResultManager:
 
     def __get_request_result_completion(self, id_request: str) -> int:
         """
-        Get the status of given broker request and compute result completion
-        by counting connected nodes and number of nodes which completed request.
-        As each tag/element gets a default namespace through lxml, the namespace
-        is removed prior counting to allow a search with xpath.
+        Get the status of given broker request and compute result completion by counting connected nodes and number of nodes which completed request.
+        As each tag/element gets a default namespace through lxml, the namespace is removed prior counting to allow a search with xpath.
         """
         url = self.__append_to_broker_url('broker', 'request', id_request, 'status')
         response = requests.get(url, headers=self.__create_basic_header_with_result_type('application/xml'))
@@ -223,7 +210,7 @@ class StatusXmlManager:
 
     def __init_status_xml(self) -> None:
         """
-        Create a new status xml file in local folder with an empty <status> tag
+        Creates a new file 'status.xml' in working directory with an empty <status> tag
         """
         root = ET.Element('status')
         self.__ELEMENT_TREE = ET.ElementTree(root)
@@ -277,8 +264,7 @@ class StatusXmlManager:
 
     def get_request_completion_as_dict(self) -> dict:
         """
-        Extracts from each element in status xml the request id and the
-        corresponding result completion and returns them as a dict
+        Extracts from each element in status xml the request id and the corresponding result completion and returns them as a dict
         """
         root = self.__ELEMENT_TREE.getroot()
         list_ids = [element.text for element in root.findall('.//id')]
@@ -320,13 +306,6 @@ class StatusXmlManager:
         return False if child is None else True
 
 
-'''
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-MAIN
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-'''
-
-
 def __init_logger():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s',
                         handlers=[logging.StreamHandler()])
@@ -357,13 +336,12 @@ def __verify_and_load_config_file(path_config: str):
 
 def __upload_tagged_results_to_sftp():
     """
-    Stores results of requests with given tag on given sftp server.
-    New/updated results are uploaded and completion rate is stored in a status xml.
-    If an existing request is deleted from broker server, the corresponding result
-    is deleted from sftp server. The corresponding element in status xml gets a
-    deleted-tag.
-    Script will throw exception and discontinue, if upload or connection fails.
-    Therefore, status xml is saved after every modification.
+    Stores results of requests with given tag on given sftp server:
+    * New/updated results are uploaded and completion rate is stored in a status xml.
+    * If an existing request is deleted from broker server, the corresponding result is deleted from sftp server.
+    The corresponding element in status xml gets a tag named "deleted"
+    * Script will throw exception and discontinue, if upload or connection fails.
+    * Status xml is saved after every modification to keep the most actual state in case of failure.
     """
     broker = BrokerRequestResultManager()
     sftp = SftpFileManager()
