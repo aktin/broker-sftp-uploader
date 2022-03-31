@@ -12,14 +12,14 @@ from sftp_export import StatusXmlManager
 
 class TestStatusXmlManager(unittest.TestCase):
 
-    def setUp(self) -> None:
-        os.environ['PATH_STATUS_XML'] = 'status.xml'
-        self.addCleanup(os.remove, os.environ['PATH_STATUS_XML'])
+    def setUp(self):
+        self.dir_current = os.getcwd()
+        os.environ['WORKING_DIR'] = self.dir_current
+        self.addCleanup(os.remove, os.path.join(self.dir_current, 'status.xml'))
 
     def test_init(self):
         xml = StatusXmlManager()
-        files_in_dir = os.listdir(os.curdir)
-        self.assertTrue(xml.PATH_STATUS_XML in files_in_dir)
+        self.assertTrue(os.path.isfile(xml.PATH_STATUS_XML))
 
     def test_add_node(self):
         xml = StatusXmlManager()

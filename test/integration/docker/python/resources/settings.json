@@ -7,6 +7,6 @@
     "SFTP_PASSWORD": "sftppassword",
     "SFTP_TIMEOUT": "25",
     "SFTP_FOLDERNAME": "rki",
-    "PATH_KEY_ENCRYPTION": "rki.key",
-    "PATH_STATUS_XML": "status.xml"
+    "PATH_KEY_ENCRYPTION": "/opt/rki.key",
+    "WORKING_DIR": "/opt"
 }
