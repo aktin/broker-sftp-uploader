@@ -7,6 +7,6 @@
     "SFTP_PASSWORD": "CHANGEME",
     "SFTP_TIMEOUT": "25",
     "SFTP_FOLDERNAME": "",
-    "PATH_KEY_ENCRYPTION": "rki.key",
-    "PATH_STATUS_XML": "status.xml"
+    "PATH_KEY_ENCRYPTION": "encryption.key",
+    "WORKING_DIR": "CHANGEME"
 }
