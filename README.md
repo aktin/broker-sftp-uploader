@@ -19,6 +19,8 @@ using [Fernet](https://github.com/fernet/spec/blob/master/Spec.md) (AES with 128
 If a result on the SFTP server is updated or deleted, a tag with the timestamp of the file operation is added to the corresponding XML element, for example `<last-update>2021-10-11 09:39:56</last-update>`
 or `<deleted>2021-10-11 09:39:55</deleted>`. The date format of all timestamps is `UTC`.
 
+## Process
+
 ![sequence diagram](./docs/sequence.png)
 
 ## Usage

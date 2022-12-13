@@ -1,6 +1,10 @@
 @startuml
 skinparam sequenceMessageAlign center
 
+participant Broker
+participant Script
+participant SFTP
+
 Script -> Broker : Give me the IDs of all requests with this tag
 Script <-- Broker : Here you go
 
