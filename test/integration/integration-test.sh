@@ -144,17 +144,9 @@ echo -e "${YEL} Test fernet encryption on python ${WHI}"
 docker exec python pytest test_fernet_decryption.py
 
 LIST_CONTAINER=( broker-server broker-connection python sftp )
-echo -e "${YEL} Stop all container ${WHI}"
+echo -e "${YEL} Clean up containers ${WHI}"
 for container in ${LIST_CONTAINER[*]}; do
   docker stop $container
-done
-
-echo -e "${YEL} Remove all container ${WHI}"
-for container in ${LIST_CONTAINER[*]}; do
   docker rm $container
-done
-
-echo -e "${YEL} Remove all images ${WHI}"
-for container in ${LIST_CONTAINER[*]}; do
   docker image rm $container
 done
