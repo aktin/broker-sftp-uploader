@@ -20,17 +20,19 @@
 #
 #
 
-import sys
-import json
-import requests
-import urllib
-import lxml.etree as ET
+import logging
 import os
 import re
-import logging
-import paramiko
+import sys
+import urllib
 from datetime import datetime
+
+import lxml.etree as ET
+import paramiko
+import requests
+import toml
 from cryptography.fernet import Fernet
+
 from my_error_notifier import MyErrorNotifier
 
 
@@ -40,9 +42,9 @@ from my_error_notifier import MyErrorNotifier
 class BrokerRequestResultManager:
 
     def __init__(self):
-        self.__BROKER_URL = os.environ['BROKER_URL']
-        self.__ADMIN_API_KEY = os.environ['ADMIN_API_KEY']
-        self.__TAG_REQUESTS = os.environ['TAG_REQUESTS']
+        self.__BROKER_URL = os.environ['BROKER.URL']
+        self.__ADMIN_API_KEY = os.environ['BROKER.API_KEY']
+        self.__TAG_REQUESTS = os.environ['REQUESTS.TAG']
         self.__check_broker_server_availability()
 
     def __check_broker_server_availability(self) -> None:
@@ -129,13 +131,13 @@ class BrokerRequestResultManager:
 class SftpFileManager:
 
     def __init__(self):
-        self.__SFTP_HOST = os.environ['SFTP_HOST']
-        self.__SFTP_USERNAME = os.environ['SFTP_USERNAME']
-        self.__SFTP_PASSWORD = os.environ['SFTP_PASSWORD']
-        self.__SFTP_TIMEOUT = int(os.environ['SFTP_TIMEOUT'])
-        self.__SFTP_FOLDERNAME = os.environ['SFTP_FOLDERNAME']
-        self.__PATH_KEY_ENCRYPTION = os.environ['PATH_KEY_ENCRYPTION']
-        self.__WORKING_DIR = os.environ['WORKING_DIR']
+        self.__SFTP_HOST = os.environ['SFTP.HOST']
+        self.__SFTP_USERNAME = os.environ['SFTP.USERNAME']
+        self.__SFTP_PASSWORD = os.environ['SFTP.PASSWORD']
+        self.__SFTP_TIMEOUT = int(os.environ['SFTP.TIMEOUT'])
+        self.__SFTP_FOLDERNAME = os.environ['SFTP.FOLDERNAME']
+        self.__PATH_KEY_ENCRYPTION = os.environ['SECURITY.PATH_ENCRYPTION_KEY']
+        self.__WORKING_DIR = os.environ['MISC.WORKING_DIR']
         self.ENCRYPTOR = self.__init_encryptor()
         self.__CONNECTION = self.__connect_to_sftp()
 
@@ -203,7 +205,7 @@ class SftpFileManager:
 class StatusXmlManager:
 
     def __init__(self):
-        self.PATH_STATUS_XML = os.path.join(os.environ['WORKING_DIR'], 'status.xml')
+        self.PATH_STATUS_XML = os.path.join(os.environ['MISC.WORKING_DIR'], 'status.xml')
         if not os.path.isfile(self.PATH_STATUS_XML):
             self.__init_status_xml()
         self.__FORMAT_DATE = '%Y-%m-%d %H:%M:%S'
@@ -307,79 +309,97 @@ class StatusXmlManager:
         return False if child is None else True
 
 
-def __init_logger():
+class Manager:
+
+    def __init__(self, path_toml: str):
+        self.__verify_and_load_TOML(path_toml)
+        self.__BROKER = BrokerRequestResultManager()
+        self.__SFTP = SftpFileManager()
+        self.__XML = StatusXmlManager()
+
+    def __flatten_dict(self, d, parent_key='', sep='.'):
+        items = []
+        for k, v in d.items():
+            new_key = f"{parent_key}{sep}{k}" if parent_key else k
+            if isinstance(v, dict):
+                items.extend(self.__flatten_dict(v, new_key, sep=sep).items())
+            else:
+                items.append((new_key, v))
+        return dict(items)
+
+    def __verify_and_load_TOML(self, path_toml: str):
+        """
+        Configuration is loaded from external config TOML and saved as environment variables
+        """
+
+        required_keys = {'BROKER.URL', 'BROKER.API_KEY', 'REQUESTS.TAG', 'SFTP.HOST', 'SFTP.USERNAME',
+                         'SFTP.PASSWORD', 'SFTP.TIMEOUT', 'SFTP.FOLDERNAME', 'SECURITY.PATH_ENCRYPTION_KEY',
+                         'SMTP.HOST', 'SMTP.USERNAME', 'SMTP.PASSWORD', 'MISC.WORKING_DIR'}
+        if not os.path.isfile(path_toml):
+            raise SystemExit('invalid TOML file path')
+        with open(path_toml) as file:
+            dict_config = toml.load(file)
+        flattened_config = self.__flatten_dict(dict_config)
+        loaded_keys = set(flattened_config.keys())
+        if required_keys.issubset(loaded_keys):
+            for key in loaded_keys:
+                os.environ[key] = flattened_config.get(key)
+        else:
+            missing_keys = required_keys - loaded_keys
+            raise SystemExit('following keys are missing in config file: {0}'.format(missing_keys))
+
+    def upload_tagged_results_to_sftp(self):
+        """
+        Stores results of requests with given tag on given sftp server:
+        * New/updated results are uploaded and completion rate is stored in a status xml.
+        * If an existing request is deleted from broker server, the corresponding result is deleted from sftp server.
+        The corresponding element in status xml gets a tag named "deleted"
+        * Script will throw exception and discontinue, if upload or connection fails.
+        * Status xml is saved after every modification to keep the most actual state in case of failure.
+        """
+
+        dict_broker = self.__BROKER.get_tagged_requests_completion_as_dict()
+        dict_xml = self.__XML.get_request_completion_as_dict()
+        set_new, set_update, set_delete = self.__XML.compare_request_completion_between_broker_and_sftp(dict_broker, dict_xml)
+
+        for id_request in set_delete:
+            self.__SFTP.delete_request_result(id_request)
+            self.__XML.add_delete_tag_to_status_element(id_request)
+        for id_request in set_new.union(set_update):
+            response_zip = self.__BROKER.get_request_result(id_request)
+            self.__SFTP.upload_request_result(response_zip)
+            completion = dict_broker.get(id_request)
+            if id_request in set_new:
+                self.__XML.add_new_element_to_status_xml(id_request, completion)
+            if id_request in set_update:
+                self.__XML.update_request_completion_of_status_element(id_request, completion)
+        self.__SFTP.upload_file(self.__XML.PATH_STATUS_XML)
+
+
+def init_logger():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s',
                         handlers=[logging.StreamHandler()])
 
 
-def __stop_logger():
+def stop_logger():
     [logging.root.removeHandler(handler) for handler in logging.root.handlers[:]]
     logging.shutdown()
 
 
-def __verify_and_load_config_file(path_config: str):
-    """
-    Configuration is loaded from external config json and saved as environment variables
-    """
-    set_required_keys = {'BROKER_URL', 'ADMIN_API_KEY', 'TAG_REQUESTS', 'SFTP_HOST', 'SFTP_USERNAME',
-                         'SFTP_PASSWORD', 'SFTP_TIMEOUT', 'SFTP_FOLDERNAME', 'PATH_KEY_ENCRYPTION', 'WORKING_DIR'}
-    if not os.path.isfile(path_config):
-        raise SystemExit('invalid config file path')
-    with open(path_config) as file_json:
-        dict_config = json.load(file_json)
-    set_found_keys = set(dict_config.keys())
-    set_matched_keys = set_required_keys.intersection(set_found_keys)
-    if set_matched_keys != set_required_keys:
-        raise SystemExit('following keys are missing in config file: {0}'.format(set_required_keys.difference(set_matched_keys)))
-    for key in set_required_keys:
-        os.environ[key] = dict_config.get(key)
-
-
-def __upload_tagged_results_to_sftp():
-    """
-    Stores results of requests with given tag on given sftp server:
-    * New/updated results are uploaded and completion rate is stored in a status xml.
-    * If an existing request is deleted from broker server, the corresponding result is deleted from sftp server.
-    The corresponding element in status xml gets a tag named "deleted"
-    * Script will throw exception and discontinue, if upload or connection fails.
-    * Status xml is saved after every modification to keep the most actual state in case of failure.
-    """
-    broker = BrokerRequestResultManager()
-    sftp = SftpFileManager()
-    xml = StatusXmlManager()
-
-    dict_broker = broker.get_tagged_requests_completion_as_dict()
-    dict_xml = xml.get_request_completion_as_dict()
-    set_new, set_update, set_delete = xml.compare_request_completion_between_broker_and_sftp(dict_broker, dict_xml)
-
-    for id_request in set_delete:
-        sftp.delete_request_result(id_request)
-        xml.add_delete_tag_to_status_element(id_request)
-    for id_request in set_new.union(set_update):
-        response_zip = broker.get_request_result(id_request)
-        sftp.upload_request_result(response_zip)
-        completion = dict_broker.get(id_request)
-        if id_request in set_new:
-            xml.add_new_element_to_status_xml(id_request, completion)
-        if id_request in set_update:
-            xml.update_request_completion_of_status_element(id_request, completion)
-    sftp.upload_file(xml.PATH_STATUS_XML)
-
-
-def main(path_config: str):
+def main(path_toml: str):
     try:
-        __init_logger()
-        __verify_and_load_config_file(path_config)
-        __upload_tagged_results_to_sftp()
+        init_logger()
+        manager = Manager(path_toml)
+        manager.upload_tagged_results_to_sftp()
     except Exception as e:
         logging.exception(e)
         notifier = MyErrorNotifier(os.path.basename(__file__))
         notifier.notify_me(str(e))
     finally:
-        __stop_logger()
+        stop_logger()
 
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
-        raise SystemExit('please give path to config file')
+        raise SystemExit('path to config TOML is missing!')
     main(sys.argv[1])

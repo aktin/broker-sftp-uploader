@@ -1,21 +1,26 @@
+import os
 import smtplib
 from email.mime.text import MIMEText
 from smtplib import SMTP_SSL as SMTP
 
 
 class MyErrorNotifier:
+    """
+    Initialization requires config TOML to be loaded as environment variables
+    """
+
     __TEXT_SUBTYPE: str = 'html'
     __ENCODING: str = 'iso-8859-1'
 
-    __HOST: str = 'CHANGEME'
-    __USER: str = 'CHANGEME'
-    __PASSWORD: str = 'CHANGEME'
     __NOTIFIER: str = 'CHANGEME'
 
     __CONNECTION: smtplib.SMTP_SSL = None
 
     def __init__(self, name_script: str):
         self.__NAME_SCRIPT = name_script
+        self.__HOST = os.environ['SMTP.HOST']
+        self.__USER = os.environ['SMTP.USERNAME']
+        self.__PASSWORD = os.environ['SMTP.PASSWORD']
         self.__CONNECTION = SMTP(self.__HOST)
         self.__CONNECTION.login(self.__USER, self.__PASSWORD)
 
