@@ -1,0 +1,24 @@
+[BROKER]
+URL = "http://localhost:8080"
+API_KEY = "xxxAdmin1234"
+
+[REQUESTS]
+TAG = "rki"
+
+[SFTP]
+HOST = "127.0.0.1"
+USERNAME = "sftpuser"
+PASSWORD = "sftppassword"
+TIMEOUT = "25"
+FOLDERNAME = "rki"
+
+[SECURITY]
+PATH_ENCRYPTION_KEY = "/opt/rki.key"
+
+[SMTP]
+HOST = "CHANGEME"
+USERNAME = "CHANGEME"
+PASSWORD = "CHANGEME"
+
+[MISC]
+WORKING_DIR = "/opt"

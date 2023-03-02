@@ -4,9 +4,10 @@ Created on Wed Aug  4 15:09:04 2021
 @author: Alexander Kombeiz (akombeiz@ukaachen.de)
 """
 
-import unittest
-import lxml.etree as ET
 import os
+import unittest
+
+import lxml.etree as ET
 from sftp_export import StatusXmlManager
 
 
@@ -14,7 +15,7 @@ class TestStatusXmlManager(unittest.TestCase):
 
     def setUp(self):
         self.dir_current = os.getcwd()
-        os.environ['WORKING_DIR'] = self.dir_current
+        os.environ['MISC.WORKING_DIR'] = self.dir_current
         self.addCleanup(os.remove, os.path.join(self.dir_current, 'status.xml'))
 
     def test_init(self):

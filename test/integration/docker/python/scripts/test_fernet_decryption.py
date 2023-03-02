@@ -5,10 +5,10 @@ Created on Fri Okt  8 09:47:32 2021
 """
 
 import os
-import json
-import zipfile
 import unittest
+import zipfile
 
+import toml
 from sftp_export import SftpFileManager
 
 
@@ -16,7 +16,7 @@ class TestFernetDecryption(unittest.TestCase):
 
     def setUp(self) -> None:
         self.NAME_FILE = 'export_2.zip'
-        self.NAME_CONFIG = 'settings.json'
+        self.NAME_CONFIG = 'settings.toml'
         self.__load_config_file()
 
     def test_decryption(self) -> None:
@@ -43,12 +43,23 @@ class TestFernetDecryption(unittest.TestCase):
         with open(self.NAME_FILE, 'wb') as file_zip:
             file_zip.write(file_encrypted)
 
+    def __flatten_dict(self, d, parent_key='', sep='.'):
+        items = []
+        for k, v in d.items():
+            new_key = f"{parent_key}{sep}{k}" if parent_key else k
+            if isinstance(v, dict):
+                items.extend(self.__flatten_dict(v, new_key, sep=sep).items())
+            else:
+                items.append((new_key, v))
+        return dict(items)
+
     def __load_config_file(self):
         with open(self.NAME_CONFIG) as file_json:
-            dict_config = json.load(file_json)
-        set_keys = set(dict_config.keys())
+            dict_config = toml.load(file_json)
+            flattened_config = self.__flatten_dict(dict_config)
+        set_keys = set(flattened_config.keys())
         for key in set_keys:
-            os.environ[key] = dict_config.get(key)
+            os.environ[key] = flattened_config.get(key)
 
 
 if __name__ == '__main__':
