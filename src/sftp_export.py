@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Created on Thu Jul 15 16:11:47 2021
-# @VERSION=1.0
+# @VERSION=1.1
 
 #
 #      Copyright (c) 2022  Alexander Kombeiz
