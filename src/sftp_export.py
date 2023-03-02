@@ -31,6 +31,7 @@ import logging
 import paramiko
 from datetime import datetime
 from cryptography.fernet import Fernet
+from my_error_notifier import MyErrorNotifier
 
 
 # TODO outsource encryption to openssl
@@ -372,6 +373,8 @@ def main(path_config: str):
         __upload_tagged_results_to_sftp()
     except Exception as e:
         logging.exception(e)
+        notifier = MyErrorNotifier(os.path.basename(__file__))
+        notifier.notify_me(str(e))
     finally:
         __stop_logger()
 

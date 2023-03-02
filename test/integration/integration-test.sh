@@ -20,6 +20,7 @@ docker-compose -f docker/docker-compose.yml up -d --force-recreate --build
 
 echo -e "${YEL} Copy python scripts from repository to python container and run unittest ${WHI}"
 docker cp $PROJECT_DIR/src/sftp_export.py python:/opt/
+docker cp $PROJECT_DIR/src/my_error_notifier.py python:/opt/
 docker exec python pytest test_xml_manager.py
 
 echo -e "${YEL} Broker creates 3 requests with tag default and 3 with tag rki ${WHI}"
