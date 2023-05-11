@@ -1,0 +1,31 @@
+name: Version Tagging
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  check_version:
+
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Get previous version
+        id: get_previous_version
+        run: |
+          previous_version=$(git describe --tags --abbrev=0)
+          echo "::set-output name=previous_version::$previous_version"
+
+      - name: Check version change
+        id: check_version_change
+        run: |
+          current_version=$(grep -Po '(?<=@VERSION=)\d+\.\d+' src/sftp_export.py)
+          previous_version=${{ steps.get_previous_version.outputs.previous_version }}
+          if [[ $current_version != $previous_version ]]; then
+            echo "Version has changed. Creating new tag."
+            git tag "v$previous_version"
+            git push --tags
+          fi

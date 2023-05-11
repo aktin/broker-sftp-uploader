@@ -1,4 +1,4 @@
-name: Python CI
+name: Python QL
 
 on: [ push, pull_request ]
 
@@ -20,6 +20,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest bandit
 
+      - name: Linting and Code Quality
+        run: |
+          pylint src/sftp_export.py
+
+      - name: Code Formatting
+        run: |
+          black src/sftp_export.py
+
       - name: Integration Testing
         run: |
           bash test/integration/integration-test.sh
@@ -34,10 +42,4 @@ jobs:
           name: Security Scan Results
           path: bandit_results.json
 
-      - name: Linting and Code Quality
-        run: |
-          pylint src/sftp_export.py
 
-      - name: Code Formatting
-        run: |
-          black src/sftp_export.py
