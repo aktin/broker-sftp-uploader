@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Created on Thu Jul 15 16:11:47 2021
-# @VERSION=1.1
+# @VERSION=1.2
 
 #
 #      Copyright (c) 2022  Alexander Kombeiz
@@ -32,8 +32,6 @@ import paramiko
 import requests
 import toml
 from cryptography.fernet import Fernet
-
-from my_error_notifier import MyErrorNotifier
 
 
 # TODO outsource encryption to openssl
@@ -334,7 +332,7 @@ class Manager:
 
         required_keys = {'BROKER.URL', 'BROKER.API_KEY', 'REQUESTS.TAG', 'SFTP.HOST', 'SFTP.USERNAME',
                          'SFTP.PASSWORD', 'SFTP.TIMEOUT', 'SFTP.FOLDERNAME', 'SECURITY.PATH_ENCRYPTION_KEY',
-                         'SMTP.HOST', 'SMTP.USERNAME', 'SMTP.PASSWORD', 'MISC.WORKING_DIR'}
+                         'MISC.WORKING_DIR'}
         if not os.path.isfile(path_toml):
             raise SystemExit('invalid TOML file path')
         with open(path_toml) as file:
@@ -393,8 +391,6 @@ def main(path_toml: str):
         manager.upload_tagged_results_to_sftp()
     except Exception as e:
         logging.exception(e)
-        notifier = MyErrorNotifier(os.path.basename(__file__))
-        notifier.notify_me(str(e))
     finally:
         stop_logger()
 

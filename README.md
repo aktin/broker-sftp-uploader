@@ -50,9 +50,6 @@ username-password combination. Authentication via an SSH key is currently not im
 | SFTP     | TIMEOUT             | Timeout for connections to the SFTP server in seconds                                                                                                                                               | 25                   |
 | SFTP     | FOLDERNAME          | Folder in SFTP root directory to upload files in. Corresponding user permissions must be set!                                                                                                       | rki                  |
 | SECURITY | PATH_ENCRYPTION_KEY | Path to the fernet key for symmetric file encryption                                                                                                                                                | folder/rki.key       |
-| SMTP     | HOST                | Domain name of your SMTP server. Only used by `my_error_notifier.py` to send an email to the set address with an error stacktrace if `sftp_export.py` throws an exception                           | smtp.gmail.com       |
-| SMTP     | USERNAME            | User on your SMTP server. Only used by `my_error_notifier.py` to send an email to the set address with an error stacktrace if `sftp_export.py` throws an exception                                  | smtpuser             |
-| SMTP     | PASSWORD            | User password on your SMTP server. Only used by `my_error_notifier.py` to send an email to the set address with an error stacktrace if `sftp_export.py` throws an exception                         | smtppassword         |
 | MISC     | WORKING_DIR         | Working directory of the script. XML file to keep track of all uploaded broker request results is initialized in this folder and downloaded broker requests results are cached here for encryption. | /opt/folder          |
 
 ## File encryption and decryption
