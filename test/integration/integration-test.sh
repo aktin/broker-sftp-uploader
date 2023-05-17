@@ -1,7 +1,5 @@
 #! /bin/bash
 
-set -euo pipefail
-
 readonly WHI='\033[0m'
 readonly RED='\e[1;31m'
 readonly ORA='\e[0;33m'

@@ -1,45 +1,20 @@
-name: Python QL
+name: Run Python QL
 
-on: [ push, pull_request ]
+on: [push, pull_request]
 
 jobs:
   build:
-
     runs-on: ubuntu-20.04
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
+      - name: Run Python QL
+        uses: aktin/aktin-github-actions/python-ql@main
         with:
-          python-version: 3.8.10
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest bandit
-
-      - name: Linting and Code Quality
-        run: |
-          pylint src/sftp_export.py
-
-      - name: Code Formatting
-        run: |
-          black src/sftp_export.py
-
-      - name: Integration Testing
-        run: |
-          bash test/integration/integration-test.sh
-
-      - name: Security Scan
-        run: |
-          bandit -r . -ll -o bandit_results.json
-
-      - name: Upload Security Scan Results
-        uses: actions/upload-artifact@v2
-        with:
-          name: Security Scan Results
-          path: bandit_results.json
-
-
+          src-path: 'src/'
+          python-version: '3.8.10'
+          pylint-ini-path: '.github/workflows/pylint.ini'
+          bandit-toml-path: '.github/workflows/bandit.toml'
+          dependencies: 'requests paramiko cryptography toml'

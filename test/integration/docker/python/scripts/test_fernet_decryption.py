@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Okt  8 09:47:32 2021
-@author: Alexander Kombeiz (akombeiz@ukaachen.de)
-"""
-
 import os
 import unittest
 import zipfile
@@ -15,32 +9,32 @@ from sftp_export import SftpFileManager
 class TestFernetDecryption(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.NAME_FILE = 'export_2.zip'
-        self.NAME_CONFIG = 'settings.toml'
+        self.name_file = 'export_2.zip'
+        self.name_config = 'settings.toml'
         self.__load_config_file()
 
     def test_decryption(self) -> None:
-        self.assertTrue(os.path.exists(self.NAME_FILE))
-        self.assertFalse(zipfile.is_zipfile(self.NAME_FILE))
+        self.assertTrue(os.path.exists(self.name_file))
+        self.assertFalse(zipfile.is_zipfile(self.name_file))
         self.__decrypt_with_fernet()
-        self.assertTrue(zipfile.is_zipfile(self.NAME_FILE))
+        self.assertTrue(zipfile.is_zipfile(self.name_file))
         self.__encrypt_with_fernet()
-        self.assertFalse(zipfile.is_zipfile(self.NAME_FILE))
+        self.assertFalse(zipfile.is_zipfile(self.name_file))
 
     def __decrypt_with_fernet(self) -> None:
         sftp = SftpFileManager()
-        with open(self.NAME_FILE, 'rb') as file_zip:
+        with open(self.name_file, 'rb') as file_zip:
             file_encrypted = file_zip.read()
-        file_decrypted = sftp.ENCRYPTOR.decrypt(file_encrypted)
-        with open(self.NAME_FILE, 'wb') as file_zip:
+        file_decrypted = sftp.encryptor.decrypt(file_encrypted)
+        with open(self.name_file, 'wb') as file_zip:
             file_zip.write(file_decrypted)
 
     def __encrypt_with_fernet(self) -> None:
         sftp = SftpFileManager()
-        with open(self.NAME_FILE, 'rb') as file_zip:
+        with open(self.name_file, 'rb') as file_zip:
             file_decrypted = file_zip.read()
-        file_encrypted = sftp.ENCRYPTOR.encrypt(file_decrypted)
-        with open(self.NAME_FILE, 'wb') as file_zip:
+        file_encrypted = sftp.encryptor.encrypt(file_decrypted)
+        with open(self.name_file, 'wb') as file_zip:
             file_zip.write(file_encrypted)
 
     def __flatten_dict(self, d, parent_key='', sep='.'):
@@ -54,7 +48,7 @@ class TestFernetDecryption(unittest.TestCase):
         return dict(items)
 
     def __load_config_file(self):
-        with open(self.NAME_CONFIG) as file_json:
+        with open(self.name_config) as file_json:
             dict_config = toml.load(file_json)
             flattened_config = self.__flatten_dict(dict_config)
         set_keys = set(flattened_config.keys())

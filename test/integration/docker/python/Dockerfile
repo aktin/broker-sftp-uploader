@@ -1,9 +1,9 @@
-FROM python:3.9
+FROM python:3.8
 
 WORKDIR /opt
 
 RUN python -m pip install --upgrade pip
-RUN python -m pip install pytest lxml requests paramiko cryptography toml
+RUN python -m pip install pytest requests paramiko cryptography toml
 
 ADD scripts/* ./
 ADD resources/* ./

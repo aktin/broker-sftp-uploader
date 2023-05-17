@@ -1,0 +1,3 @@
+[tool.bandit]
+# B314: parsing untrusted XML data -> script works only with its own created xml file
+skips = ["B314"]

@@ -1,13 +1,8 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Aug  4 15:09:04 2021
-@author: Alexander Kombeiz (akombeiz@ukaachen.de)
-"""
-
 import os
+import time
 import unittest
+import xml.etree.ElementTree as et
 
-import lxml.etree as ET
 from sftp_export import StatusXmlManager
 
 
@@ -20,81 +15,75 @@ class TestStatusXmlManager(unittest.TestCase):
 
     def test_init(self):
         xml = StatusXmlManager()
-        self.assertTrue(os.path.isfile(xml.PATH_STATUS_XML))
+        self.assertTrue(os.path.isfile(xml.path_status_xml))
 
     def test_add_node(self):
         xml = StatusXmlManager()
-        xml.add_new_element_to_status_xml('1', '10')
-        xml.add_new_element_to_status_xml('2', '20')
-        xml.add_new_element_to_status_xml('3', '30')
-        tree = ET.parse(xml.PATH_STATUS_XML)
+        xml.update_or_add_element('1', '10')
+        xml.update_or_add_element('2', '20')
+        xml.update_or_add_element('3', '30')
+        tree = et.parse(xml.path_status_xml)
         root = tree.getroot()
-        self.assertEqual(3, len(root.getchildren()))
-
-    def test_add_node_error(self):
-        xml = StatusXmlManager()
-        xml.add_new_element_to_status_xml('1', '10')
-        with self.assertRaises(Exception):
-            xml.add_new_element_to_status_xml('1', '20')
+        self.assertEqual(3, len(list(root)))
 
     def test_update_node(self):
         xml = StatusXmlManager()
-        xml.add_new_element_to_status_xml('1', '10')
-        xml.add_new_element_to_status_xml('2', '20')
-        xml.add_new_element_to_status_xml('3', '30')
-        xml.update_request_completion_of_status_element('1', '100')
-        xml.update_request_completion_of_status_element('2', '100')
-        tree = ET.parse(xml.PATH_STATUS_XML)
-        list_tags = tree.getroot().findall('.//last-update')
-        self.assertEqual(2, len(list_tags))
-        node_1 = tree.xpath("//*[local-name()='request-status']/id[text()='%s']/./.." % '1')[0]
-        self.assertEqual('100', node_1.find('.//completion').text)
-        node_2 = tree.xpath("//*[local-name()='request-status']/id[text()='%s']/./.." % '2')[0]
-        self.assertEqual('100', node_2.find('.//completion').text)
-        node_3 = tree.xpath("//*[local-name()='request-status']/id[text()='%s']/./.." % '3')[0]
-        self.assertEqual('30', node_3.find('.//completion').text)
-
-    def test_update_node_error(self):
-        xml = StatusXmlManager()
-        with self.assertRaises(Exception):
-            xml.update_request_completion_of_status_element('1', '100')
+        xml.update_or_add_element('1', '10')
+        xml.update_or_add_element('2', '20')
+        xml.update_or_add_element('3', '30')
+        xml.update_or_add_element('1', '100')
+        xml.update_or_add_element('2', '100')
+        node_1 = xml.get_element_by_id('1')
+        self.assertEqual('100', node_1.find('completion').text)
+        self.assertIsNotNone(node_1.find('last-update'))
+        node_2 = xml.get_element_by_id('2')
+        self.assertEqual('100', node_2.find('completion').text)
+        self.assertIsNotNone(node_2.find('last-update'))
+        node_3 = xml.get_element_by_id('3')
+        self.assertEqual('30', node_3.find('completion').text)
+        self.assertIsNone(node_3.find('last-update'))
 
     def test_update_node_multiple(self):
         xml = StatusXmlManager()
-        xml.add_new_element_to_status_xml('1', '10')
-        xml.update_request_completion_of_status_element('1', '20')
-        xml.update_request_completion_of_status_element('1', '30')
-        xml.update_request_completion_of_status_element('1', '40')
-        tree = ET.parse(xml.PATH_STATUS_XML)
-        node_1 = tree.xpath("//*[local-name()='request-status']/id[text()='%s']/./.." % '1')[0]
-        self.assertEqual(1, len(node_1.findall('.//last-update')))
-        self.assertEqual('40', node_1.find('.//completion').text)
+        xml.update_or_add_element('1', '10')
+        xml.update_or_add_element('1', '20')
+        node_1 = xml.get_element_by_id('1')
+        self.assertIsNotNone(node_1.find('last-update'))
+        ts_update = node_1.find('last-update').text
+        time.sleep(1)
+        xml.update_or_add_element('1', '30')
+        node_1 = xml.get_element_by_id('1')
+        self.assertIsNotNone(node_1.find('last-update'))
+        ts_update2 = node_1.find('last-update').text
+        self.assertNotEqual(ts_update, ts_update2)
 
     def test_add_delete_tag(self):
         xml = StatusXmlManager()
-        xml.add_new_element_to_status_xml('1', '10')
-        xml.add_new_element_to_status_xml('2', '20')
-        xml.add_new_element_to_status_xml('3', '30')
-        xml.add_delete_tag_to_status_element('1')
-        xml.add_delete_tag_to_status_element('2')
-        tree = ET.parse(xml.PATH_STATUS_XML)
-        list_tags = tree.getroot().findall('.//deleted')
-        self.assertEqual(2, len(list_tags))
-
-    def test_add_delete_tag_error(self):
-        xml = StatusXmlManager()
-        with self.assertRaises(Exception):
-            xml.add_delete_tag_to_status_element('1')
+        xml.update_or_add_element('1', '10')
+        xml.update_or_add_element('2', '20')
+        xml.update_or_add_element('3', '30')
+        xml.add_delete_tag_to_element('1')
+        xml.add_delete_tag_to_element('2')
+        node_1 = xml.get_element_by_id('1')
+        self.assertIsNotNone(node_1.find('deleted'))
+        node_2 = xml.get_element_by_id('2')
+        self.assertIsNotNone(node_2.find('deleted'))
+        node_3 = xml.get_element_by_id('3')
+        self.assertIsNone(node_3.find('deleted'))
 
     def test_add_delete_tag_multiple(self):
         xml = StatusXmlManager()
-        xml.add_new_element_to_status_xml('1', '10')
-        xml.add_delete_tag_to_status_element('1')
-        xml.add_delete_tag_to_status_element('1')
-        xml.add_delete_tag_to_status_element('1')
-        tree = ET.parse(xml.PATH_STATUS_XML)
-        node_1 = tree.xpath("//*[local-name()='request-status']/id[text()='%s']/./.." % '1')[0]
-        self.assertEqual(1, len(node_1.findall('.//deleted')))
+        xml.update_or_add_element('1', '10')
+        xml.add_delete_tag_to_element('1')
+        node_1 = xml.get_element_by_id('1')
+        self.assertIsNotNone(node_1.find('deleted'))
+        ts_delete = node_1.find('deleted').text
+        time.sleep(1)
+        xml.add_delete_tag_to_element('1')
+        node_1 = xml.get_element_by_id('1')
+        self.assertIsNotNone(node_1.find('deleted'))
+        ts_delete2 = node_1.find('deleted').text
+        self.assertNotEqual(ts_delete, ts_delete2)
 
     def test_dict_node_completion(self):
         xml = StatusXmlManager()
@@ -129,15 +118,15 @@ class TestStatusXmlManager(unittest.TestCase):
 
     @staticmethod
     def __fill_xml_tree(xml: StatusXmlManager):
-        xml.add_new_element_to_status_xml('1', '100')
-        xml.add_delete_tag_to_status_element('1')
-        xml.add_new_element_to_status_xml('2', '200')
-        xml.update_request_completion_of_status_element('2', '300')
-        xml.add_new_element_to_status_xml('3', '400')
-        xml.add_new_element_to_status_xml('4', '500')
-        xml.add_new_element_to_status_xml('5', '600')
-        xml.update_request_completion_of_status_element('5', '700')
-        xml.add_delete_tag_to_status_element('5')
+        xml.update_or_add_element('1', '100')
+        xml.add_delete_tag_to_element('1')
+        xml.update_or_add_element('2', '200')
+        xml.update_or_add_element('2', '300')
+        xml.update_or_add_element('3', '400')
+        xml.update_or_add_element('4', '500')
+        xml.update_or_add_element('5', '600')
+        xml.update_or_add_element('5', '700')
+        xml.add_delete_tag_to_element('5')
         return xml
 
 
