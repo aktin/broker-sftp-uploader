@@ -14,3 +14,4 @@ jobs:
         uses: aktin/aktin-github-actions/python-version-tagging@main
         with:
           file-path: '/src/sftp_export.py'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
