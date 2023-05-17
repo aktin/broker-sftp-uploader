@@ -1,4 +1,4 @@
-# broker-sftp-interface ![Python 3.8.10](https://img.shields.io/badge/python-3.8.10-blue)
+# broker-sftp-uploader ![Python 3.8.10](https://img.shields.io/badge/python-3.8.10-blue)
 
 Simple script that filters all [AKTIN Broker](https://github.com/aktin/broker) requests by a given tag and uploads the results of the filtered requests to a specified SFTP server.
 
