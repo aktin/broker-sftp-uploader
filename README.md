@@ -1,4 +1,4 @@
-# broker-sftp-uploader ![Python 3.8.10](https://img.shields.io/badge/python-3.8.10-blue)
+## broker-sftp-uploader ![Python 3.8.10](https://img.shields.io/badge/python-3.8.10-blue)
 
 Simple script that filters all [AKTIN Broker](https://github.com/aktin/broker) requests by a given tag and uploads the results of the filtered requests to a specified SFTP server.
 
@@ -23,11 +23,11 @@ If a result on the SFTP server is updated or deleted, a tag with the timestamp o
 example `<last-update>2021-10-11 09:39:56</last-update>`
 or `<deleted>2021-10-11 09:39:55</deleted>`. The date format of all timestamps is `UTC`.
 
-## Process
+### Process
 
 ![sequence diagram](./docs/sequence.png)
 
-## Usage
+### Usage
 
 This script is only usable with a **broker-server >= 1.3.3**, as the tagging feature was only added in V1.3.3. You can execute the script from the command prompt via
 
@@ -52,7 +52,7 @@ username-password combination. Authentication via an SSH key is currently not im
 | SECURITY | PATH_ENCRYPTION_KEY | Path to the fernet key for symmetric file encryption                                                                                                                                                | folder/rki.key       |
 | MISC     | WORKING_DIR         | Working directory of the script. XML file to keep track of all uploaded broker request results is initialized in this folder and downloaded broker requests results are cached here for encryption. | /opt/folder          |
 
-## File encryption and decryption
+### File encryption and decryption
 
 Each file uploaded to the SFTP server is symmetric encrypted using Fernet. A Fernet key is required for encryption and decryption. It is not currently possible to disable encryption in this script (via configuration). A local key can be created in Python using the following command:
 
@@ -77,7 +77,7 @@ with open(PATH_ENCRYPTED_FILE, 'rb') as file:
 file_decrypted = fernet.decrypt(file_encrypted)
 ```
 
-## Testing
+### Testing
 
 To test the script, `integration-test.sh` is attached. To run the integration test, a running instance of [Docker](https://www.docker.com/) is required. The test script will create several containers to simulate the [AKTIN Broker Server](https://github.com/aktin/broker/tree/master/broker-server), two [AKTIN Broker Clients](https://github.com/aktin/broker/tree/master/broker-client) as well as a simple SFTP server using [OpenSSH](https://www.openssh.com/).
 
