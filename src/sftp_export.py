@@ -2,11 +2,11 @@
 """
 Created on 15.07.2021
 @AUTHOR=Alexander Kombeiz (akombeiz@ukaachen.de)
-@VERSION=1.1
+@VERSION=1.2
 """
 
 #
-#      Copyright (c) 2021  AKTIN
+#      Copyright (c) 2021 AKTIN
 #
 #      This program is free software: you can redistribute it and/or modify
 #      it under the terms of the GNU Affero General Public License as
