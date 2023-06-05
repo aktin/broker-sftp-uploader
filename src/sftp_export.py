@@ -120,7 +120,6 @@ class BrokerRequestResultManager:
         """
         Get the completion status of a given broker request.
         Computes the result completion by counting connected nodes and the number of nodes that completed the request.
-        As each tag/element gets a default namespace through lxml, the namespace is removed prior to counting to allow a search with XPath.
         Returns the completion percentage (rounded to 2 decimal places) or 0.0 if no nodes found.
         """
         url = self.__append_to_broker_url('broker', 'request', id_request, 'status')
