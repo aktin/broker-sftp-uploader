@@ -395,6 +395,6 @@ def main(path_toml: str):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
         raise SystemExit('path to config TOML is missing!')
     main(sys.argv[1])
