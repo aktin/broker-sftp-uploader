@@ -1,4 +1,4 @@
-## broker-sftp-uploader ![Python 3.8.10](https://img.shields.io/badge/python-3.8.10-blue)
+## broker-sftp-uploader ![Python 3.10.6](https://img.shields.io/badge/python-3.10.6-blue)
 
 Simple script that filters all [AKTIN Broker](https://github.com/aktin/broker) requests by a given tag and uploads the results of the filtered requests to a specified SFTP server.
 
@@ -39,22 +39,23 @@ When the script starts, it first checks the path to the specified TOML file. It 
 the example TOML configuration in `test/resources`. If a key is not present, the script exits with an error message. Access to the SFTP server is only possible via a
 username-password combination. Authentication via an SSH key is currently not implemented.
 
-| Scope    | Key                 | Description                                                                                                                                                                                         | Example              |
-|----------|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|
+| Scope    | Key                 | Description                                                                                                                                                                                         | Example               |
+|----------|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------|
 | BROKER   | URL                 | URL to your broker server                                                                                                                                                                           | http://localhost:8080 |
-| BROKER   | API_KEY             | API key of your broker server administrator                                                                                                                                                         | xxxAdmin1234         |
-| REQUESTS | TAG                 | Tag to filter requests on your broker server by                                                                                                                                                     | rki                  |
-| SFTP     | HOST                | IP adress of your SFTP server                                                                                                                                                                       | 127.0.0.1            |
-| SFTP     | USERNAME            | User on your SFTP server                                                                                                                                                                            | sftpuser             |
-| SFTP     | PASSWORD            | User password on your SFTP user                                                                                                                                                                     | sftppassword         |
-| SFTP     | TIMEOUT             | Timeout for connections to the SFTP server in seconds                                                                                                                                               | 25                   |
-| SFTP     | FOLDERNAME          | Folder in SFTP root directory to upload files in. Corresponding user permissions must be set!                                                                                                       | rki                  |
-| SECURITY | PATH_ENCRYPTION_KEY | Path to the fernet key for symmetric file encryption                                                                                                                                                | folder/rki.key       |
-| MISC     | WORKING_DIR         | Working directory of the script. XML file to keep track of all uploaded broker request results is initialized in this folder and downloaded broker requests results are cached here for encryption. | /opt/folder          |
+| BROKER   | API_KEY             | API key of your broker server administrator                                                                                                                                                         | xxxAdmin1234          |
+| REQUESTS | TAG                 | Tag to filter requests on your broker server by                                                                                                                                                     | rki                   |
+| SFTP     | HOST                | IP adress of your SFTP server                                                                                                                                                                       | 127.0.0.1             |
+| SFTP     | USERNAME            | User on your SFTP server                                                                                                                                                                            | sftpuser              |
+| SFTP     | PASSWORD            | User password on your SFTP user                                                                                                                                                                     | sftppassword          |
+| SFTP     | TIMEOUT             | Timeout for connections to the SFTP server in seconds                                                                                                                                               | 25                    |
+| SFTP     | FOLDERNAME          | Folder in SFTP root directory to upload files in. Corresponding user permissions must be set!                                                                                                       | rki                   |
+| SECURITY | PATH_ENCRYPTION_KEY | Path to the fernet key for symmetric file encryption                                                                                                                                                | folder/rki.key        |
+| MISC     | WORKING_DIR         | Working directory of the script. XML file to keep track of all uploaded broker request results is initialized in this folder and downloaded broker requests results are cached here for encryption. | /opt/folder           |
 
 ### File encryption and decryption
 
-Each file uploaded to the SFTP server is symmetric encrypted using Fernet. A Fernet key is required for encryption and decryption. It is not currently possible to disable encryption in this script (via configuration). A local key can be created in Python using the following command:
+Each file uploaded to the SFTP server is symmetric encrypted using Fernet. A Fernet key is required for encryption and decryption. It is not currently possible to disable encryption in this script (via configuration). A local
+key can be created in Python using the following command:
 
 ```
 from cryptography.fernet import Fernet
@@ -79,6 +80,10 @@ file_decrypted = fernet.decrypt(file_encrypted)
 
 ### Testing
 
-To test the script, `integration-test.sh` is attached. To run the integration test, a running instance of [Docker](https://www.docker.com/) is required. The test script will create several containers to simulate the [AKTIN Broker Server](https://github.com/aktin/broker/tree/master/broker-server), two [AKTIN Broker Clients](https://github.com/aktin/broker/tree/master/broker-client) as well as a simple SFTP server using [OpenSSH](https://www.openssh.com/).
+To test the script, `integration-test.sh` is attached. To run the integration test, a running instance of [Docker](https://www.docker.com/) is required. The test script will create several containers to simulate
+the [AKTIN Broker Server](https://github.com/aktin/broker/tree/master/broker-server), two [AKTIN Broker Clients](https://github.com/aktin/broker/tree/master/broker-client) as well as a simple SFTP server
+using [OpenSSH](https://www.openssh.com/).
 
-During integration testing, the AKTIN Broker creates several requests that are picked up and completed by the AKTIN Clients. The `sftp_export.py` script is run in between to detect changes in the completeness of the generated requests. While an integration test script is running, the console displays the currently executed step. If a step fails or does not return the expected result, it is marked in red in the console. The script itself is not aborted and therefore requires a manual check for correctness.
+During integration testing, the AKTIN Broker creates several requests that are picked up and completed by the AKTIN Clients. The `sftp_export.py` script is run in between to detect changes in the completeness of the generated
+requests. While an integration test script is running, the console displays the currently executed step. If a step fails or does not return the expected result, it is marked in red in the console. The script itself is not
+aborted and therefore requires a manual check for correctness.
