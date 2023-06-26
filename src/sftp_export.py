@@ -54,10 +54,16 @@ class BrokerRequestResultManager:
 
     def __check_broker_server_availability(self):
         url = self.__append_to_broker_url('broker', 'status')
-        response = requests.head(url, timeout=self.__timeout)
-        if response.status_code != 200:
-            raise ConnectionError('Could not connect to AKTIN Broker')
-
+        try:
+            response = requests.head(url, timeout=self.__timeout)
+            response.raise_for_status()
+        except requests.exceptions.Timeout:
+            raise SystemExit('Connection to AKTIN Broker timed out')
+        except requests.exceptions.HTTPError as err:
+            raise SystemExit(f'HTTP error occurred: {err}')
+        except requests.exceptions.RequestException as err:
+            raise SystemExit(f'An ambiguous error occurred: {err}')
+            
     def __append_to_broker_url(self, *items: str) -> str:
         url = self.__broker_url
         for item in items:
