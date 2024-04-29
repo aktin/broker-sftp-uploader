@@ -14,7 +14,7 @@ current_dir=$(pwd)
 readonly PROJECT_DIR=${current_dir%$PROJECT_NAME*}$PROJECT_NAME
 
 echo -e "${YEL} Build the docker-compose stack ${WHI}"
-docker-compose -f $PROJECT_DIR/test/integration/docker/docker-compose.yml up -d --force-recreate --build
+docker compose -f $PROJECT_DIR/test/integration/docker/docker-compose.yml up -d --force-recreate --build
 
 echo -e "${YEL} Copy requirements.txt to python container and install dependencies ${WHI}"
 docker cp $PROJECT_DIR/requirements.txt python:/opt/

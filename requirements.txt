@@ -1,4 +1,9 @@
-paramiko==3.3.1
+# Networking
+paramiko==3.4.0
 requests~=2.31.0
+
+# Configuration
 toml~=0.10.2
-cryptography==41.0.5
+
+# Security
+cryptography==42.0.4
