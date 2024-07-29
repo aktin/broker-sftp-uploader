@@ -63,7 +63,7 @@ class BrokerRequestResultManager:
             raise SystemExit(f'HTTP error occurred: {err}')
         except requests.exceptions.RequestException as err:
             raise SystemExit(f'An ambiguous error occurred: {err}')
-            
+
     def __append_to_broker_url(self, *items: str) -> str:
         url = self.__broker_url
         for item in items:
@@ -159,7 +159,9 @@ class SftpFileManager:
     def __connect_to_sftp(self) -> paramiko.sftp_client.SFTPClient:
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(self.__sftp_host, username=self.__sftp_username, password=self.__sftp_password, timeout=self.__sftp_timeout)
+        ssh.connect(self.__sftp_host, username=self.__sftp_username,
+                    password=self.__sftp_password, timeout=self.__sftp_timeout,
+                    allow_agent=False, look_for_keys=False)
         return ssh.open_sftp()
 
     def upload_request_result(self, response: requests.models.Response):
