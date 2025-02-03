@@ -6,7 +6,7 @@ Created on 15.07.2021
 """
 
 #
-#      Copyright (c) 2021 AKTIN
+#      Copyright (c) 2025 AKTIN
 #
 #      This program is free software: you can redistribute it and/or modify
 #      it under the terms of the GNU Affero General Public License as
@@ -347,18 +347,20 @@ class Manager:
         required_keys = {'BROKER.URL', 'BROKER.API_KEY', 'REQUESTS.TAG', 'SFTP.HOST', 'SFTP.USERNAME',
                          'SFTP.PASSWORD', 'SFTP.TIMEOUT', 'SFTP.FOLDERNAME', 'SECURITY.PATH_ENCRYPTION_KEY',
                          'MISC.WORKING_DIR'}
+        optional_keys = {'REQUESTS_CA_BUNDLE'}
         if not os.path.isfile(path_toml):
             raise SystemExit('invalid TOML file path')
         with open(path_toml, encoding='utf-8') as file:
             dict_config = toml.load(file)
         flattened_config = self.__flatten_dict(dict_config)
         loaded_keys = set(flattened_config.keys())
-        if required_keys.issubset(loaded_keys):
-            for key in loaded_keys:
-                os.environ[key] = flattened_config.get(key)
-        else:
-            missing_keys = required_keys - loaded_keys
+        missing_keys = required_keys - loaded_keys
+        if missing_keys:
             raise SystemExit(f'following keys are missing in config file: {missing_keys}')
+        for key in required_keys | optional_keys:
+            if key in flattened_config:
+                value = flattened_config[key]
+                os.environ[key] = str(value)
 
     def upload_tagged_results_to_sftp(self):
         """
