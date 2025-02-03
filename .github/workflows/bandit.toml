@@ -1,4 +1,0 @@
-[tool.bandit]
-# B314: parsing untrusted XML data -> script works only with its own created xml file
-# B507: Paramiko call with policy set to automatically trust the unknown host key -> Paramiko only connects to one single trusted SSH Server
-skips = ["B314", "B507"]
