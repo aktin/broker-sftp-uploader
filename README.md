@@ -51,6 +51,7 @@ username-password combination. Authentication via an SSH key is currently not im
 | SFTP     | FOLDERNAME          | Folder in SFTP root directory to upload files in. Corresponding user permissions must be set!                                                                                                       | rki                   |
 | SECURITY | PATH_ENCRYPTION_KEY | Path to the fernet key for symmetric file encryption                                                                                                                                                | folder/rki.key        |
 | MISC     | WORKING_DIR         | Working directory of the script. XML file to keep track of all uploaded broker request results is initialized in this folder and downloaded broker requests results are cached here for encryption. | /opt/folder           |
+| -        | REQUESTS_CA_BUNDLE | (optional) Specifies the path to a custom Certificate Authority (CA) bundle file that enables secure HTTPS connections to servers using non-standard or self-signed SSL certificates | path/to/ca-bundle          |
 
 ### File encryption and decryption
 
