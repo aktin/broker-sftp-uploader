@@ -1,6 +1,6 @@
 # Networking
 paramiko==3.4.0
-requests~=2.31.0
+requests~=2.32.3
 
 # Configuration
 toml~=0.10.2
