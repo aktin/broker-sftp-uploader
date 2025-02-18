@@ -1,0 +1,44 @@
+@startuml
+
+participant "TOML" as toml
+participant "SFTP Script" as manager
+participant "AKTIN Broker" as broker
+participant "Status XML" as statusxml
+participant "SFTP Server" as sftp
+
+manager -> toml: Load configuration
+activate toml
+    toml --> manager: Return environment variables
+deactivate toml
+
+manager -> broker: Request tagged requests
+activate broker
+    broker --> manager: Return tagged requests
+deactivate broker
+
+manager -> statusxml: Compare requests with XML
+
+group New or Updated Requests
+    manager -> broker: Retrieve request results
+    broker --> manager: Return results
+    manager -> sftp: Upload request results
+    activate sftp
+        sftp --> manager: Confirm upload
+    deactivate sftp
+    manager -> statusxml: Update XML
+end
+
+group Deleted Requests
+    manager -> sftp: Delete from SFTP
+    activate sftp
+        sftp --> manager: Confirm deletion
+    deactivate sftp
+    manager -> statusxml: Update XML
+end
+
+manager -> sftp: Upload Status XML
+activate sftp
+sftp --> manager: Confirm upload
+deactivate sftp
+
+@enduml
