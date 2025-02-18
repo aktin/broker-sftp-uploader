@@ -6,4 +6,4 @@ requests~=2.31.0
 toml~=0.10.2
 
 # Security
-cryptography==42.0.4
+cryptography==44.0.1
