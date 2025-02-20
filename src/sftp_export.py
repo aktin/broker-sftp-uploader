@@ -6,7 +6,7 @@ Created on 15.07.2021
 """
 
 #
-#      Copyright (c) 2025 AKTIN
+#      Copyright (c) 2022 AKTIN
 #
 #      This program is free software: you can redistribute it and/or modify
 #      it under the terms of the GNU Affero General Public License as
@@ -163,6 +163,14 @@ class SftpFileManager:
                     password=self.__sftp_password, timeout=self.__sftp_timeout,
                     allow_agent=False, look_for_keys=False)
         return ssh.open_sftp()
+
+    def __del__(self):
+        try:
+            if self.__connection:
+                self.__connection.close()
+                logging.info('SFTP connection closed.')
+        except Exception as e:
+            logging.error('Error closing SFTP connection: %s', e)
 
     def upload_request_result(self, response: requests.models.Response):
         """
